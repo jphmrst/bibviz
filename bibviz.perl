@@ -840,7 +840,7 @@ Not all standard BibTeX fields are currently displayed.
 
 =back
 
-This is Version 0.1 of BibViz.
+This is a pre-version-number version of BibViz.
 
 =head1 AUTHOR
 
