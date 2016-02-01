@@ -159,7 +159,7 @@ constructed pages.
 
     Text used in the navigation lines at the top and bottom of pages.
 
-## options
+## Other options
 
 - **--verbose, -v**
 
@@ -181,7 +181,10 @@ constructed pages.
 # DESCRIPTION
 
 **Bibviz** creates a browsable tree of HTML from a collection of BibTeX
-files and PDFs and files associated with BibTeX entries.
+files and PDFs and files associated with BibTeX entries.  Citations
+can be listed by author or by keyword, and individual citations' pages
+include the usual BibTeX fields' information as well as any abstract,
+citations and local file links provided in the BibTeX source.
 
 A to-do list:
 
@@ -189,3 +192,11 @@ A to-do list:
 - Not all standard BibTeX fields are currently displayed.
 
 This is Version 0.1 of BibViz.
+
+# AUTHOR
+
+John Maraist, bibviz at maraist dot O R G, http://maraist.org
+
+# LICENSE
+
+GPL3, see included

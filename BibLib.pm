@@ -1,3 +1,8 @@
+#
+# BibViz --- BibTeX-to-HTML-tree converter for easier bibliography browsing
+#
+# (C) 2016, John Maraist, licensed under GPL3, see file included
+
 package BibLib;
 {
   $BibLib::VERSION = '0.01';

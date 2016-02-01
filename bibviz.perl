@@ -1,4 +1,8 @@
 #!/usr/bin/env perl
+#
+# BibViz --- BibTeX-to-HTML-tree converter for easier bibliography browsing
+#
+# (C) 2016, John Maraist, licensed under GPL3, see file included
 
 use Cwd;
 use Encode;
@@ -791,7 +795,7 @@ Text used in the navigation lines at the top and bottom of pages.
 
 =back
 
-=head2  options
+=head2 Other options
 
 =over 8
 
@@ -817,7 +821,10 @@ Show this document.
 =head1 DESCRIPTION
 
 B<Bibviz> creates a browsable tree of HTML from a collection of BibTeX
-files and PDFs and files associated with BibTeX entries.
+files and PDFs and files associated with BibTeX entries.  Citations
+can be listed by author or by keyword, and individual citations' pages
+include the usual BibTeX fields' information as well as any abstract,
+citations and local file links provided in the BibTeX source.
 
 A to-do list:
 
@@ -834,5 +841,13 @@ Not all standard BibTeX fields are currently displayed.
 =back
 
 This is Version 0.1 of BibViz.
+
+=head1 AUTHOR
+
+John Maraist, bibviz at maraist dot O R G, http://maraist.org
+
+=head1 LICENSE
+
+GPL3, see included
 
 =cut
