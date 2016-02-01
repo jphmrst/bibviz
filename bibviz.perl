@@ -842,6 +842,20 @@ Not all standard BibTeX fields are currently displayed.
 
 This is a pre-version-number version of BibViz.
 
+=head2 Requirements
+
+There are a small number of Perl packages that you may need to pull
+from CPAN:
+
+  HTML::HTML5::Builder
+  BibTeX::Parser
+
+And if you want to rebuild the GitHub README.md, then also:
+
+  Pod::Markdown::Github
+
+Everything else should be included with a standard Perl distribution.
+
 =head1 AUTHOR
 
 John Maraist, bibviz at maraist dot O R G, http://maraist.org
