@@ -49,6 +49,8 @@ my $topNav = 'Top';
 my $allPapersNav = 'all papers';
 my $allAuthorsNav = 'all authors';
 my $allKeywordNav = 'all keywords';
+my $asAuthorSubhead = 'As author';
+my $asEditorSubhead = 'As editor';
 my $verbose = 1;
 
 ## Process command-line options
@@ -62,6 +64,8 @@ GetOptions("main-title=s" => \$mainTitle,
            "papers-nav=s" => \$allPapersNav,
            "authors-nav=s" => \$allAuthorsNav,
            "keywords-nav=s" => \$allKeywordNav,
+           "as-author-subhead=s" => \$asAuthorSubhead,
+           "as-editor-subhead=s" => \$asEditorSubhead,
 
            "keywords-field=s" => \$keywordsField,
            "complete-cites-field=s" => \$citesCompleteField,
@@ -184,6 +188,7 @@ my @sortedEntries = sort entrySorter @entries;
 ## Augmenting records.
 print "Cross-referencing.\n" if $verbose>0;
 my %authorPapers = ();
+my %editorPapers = ();
 my %keywordPapers = ();
 foreach my $tag (@sortedEntries) {
   my $entry = $lib->entry($tag);
@@ -203,7 +208,7 @@ foreach my $tag (@sortedEntries) {
 
   ## Sort papers by editor.
   foreach my $editor (@editors) {
-    push @{$authorPapers{$editor}}, $tag;
+    push @{$editorPapers{$editor}}, $tag;
   }
 
   ## Turn (some) LaTeX into HTML
@@ -256,7 +261,8 @@ foreach my $author (sort lastNameSorter (keys %authorPapers)) {
   }
 
   open HTML, ">$htmlOutputDir/author/".cleanUrl($author).".html";
-  print HTML authorHtml($author, $authorPapers{$author});
+  print HTML authorHtml($author,
+                        $authorPapers{$author}, $editorPapers{$author});
   close HTML;
 }
 
@@ -333,15 +339,24 @@ exit 0;
 sub authorHtml {
   my $author = shift;
   my $refs = shift;
+  my $editorRefs = shift;
 
   my $paperList = ul();
   foreach my $ref (@$refs) {
     appendElementItem($paperList, $ref);
   }
 
+  my $editorList = ul();
+  foreach my $ref (@$refs) {
+    appendElementItem($editorList, $ref);
+  }
+
   return html(
     head(title($author)),
-    body(header(), h1($author), $paperList, footer()));
+    body(header(), h1($author),
+         h2($asAuthorSubhead), $paperList,
+         h2($asEditorSubhead), $editorList,
+         footer()));
 }
 
 sub keywordHtml {
