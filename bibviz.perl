@@ -799,6 +799,12 @@ papers, authors and keywords.
 The title of the section listing files matching a B<--paper-match>
 pattern but not mentioned in any BibTeX entry.
 
+=item B<--as-author-subhead, --as-editor-subhead>
+
+On the pages for an individual author/editor, the sections titles for
+the lists of citations where the individual is an author and is an
+editor.
+
 =item B<--abstract-title>
 
 Text placed in boldface before the first paragraph of papers
