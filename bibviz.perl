@@ -447,7 +447,6 @@ sub entryHtml {
   my $editorList=$lib->field($tag, 'editor');
   my @editors = split / and /, $editorList;
   $editorList =~ s/ and /, /g;
-  my $title   = $lib->field($tag, 'title');
 
   my $title=$lib->field($tag, 'title');
   my $booktitle=$lib->field($tag, 'booktitle');
@@ -456,10 +455,7 @@ sub entryHtml {
   my $volume=$lib->field($tag, 'volume');
   my $number=$lib->field($tag, 'number');
   my $year = $lib->field($tag, 'year');
-  my $abstract = $lib->field($tag, 'abstract');
-  my $annote = $lib->field($tag, 'annote');
   my $paperfile = $lib->field($tag, 'file');
-  my $srcfile = $lib->field($tag, '_file');
 
   push @body, h1($title);
   push @body, @overAuthorLinks;
@@ -485,6 +481,38 @@ sub entryHtml {
     }
   }
 
+  # Unformatted and irrespective of type, just dumping all the fields
+  # we extracted.
+  my $pages = $lib->field($tag, 'pages');
+  my $month = $lib->field($tag, 'month');
+  my $note = $lib->field($tag, 'note');
+  my $publisher = $lib->field($tag, 'publisher');
+  my $address = $lib->field($tag, 'address');
+  my $edition = $lib->field($tag, 'edition');
+  my $howpublished = $lib->field($tag, 'howpublished');
+  my $chapter = $lib->field($tag, 'chapter');
+  my $series = $lib->field($tag, 'series');
+  my $organization = $lib->field($tag, 'organization');
+  my $school = $lib->field($tag, 'school');
+  my $type = $lib->field($tag, 'type');
+  push @body, br, br, "Editors: ", $editorList
+      if defined $editorList && $editorList ne '';
+  push @body, br, "Pages: ", $pages if defined $pages && $pages ne '';
+  push @body, br, "Month: ", $month if defined $month && $month ne '';
+  push @body, br, "Note: ", $note if defined $note && $note ne '';
+  push @body, br, "Publisher: ", $publisher if defined $publisher && $publisher ne '';
+  push @body, br, "Address: ", $address if defined $address && $address ne '';
+  push @body, br, "Edition: ", $edition if defined $edition && $edition ne '';
+  push @body, br, "Howpublished: ", $howpublished if defined $howpublished && $howpublished ne '';
+  push @body, br, "Chapter: ", $chapter if defined $chapter && $chapter ne '';
+  push @body, br, "Series: ", $series if defined $series && $series ne '';
+  push @body, br, "Organization: ", $organization if defined $organization && $organization ne '';
+  push @body, br, "School: ", $school if defined $school && $school ne '';
+  push @body, br, "Type: ", $type if defined $type && $type ne '';
+
+  # Abstract and annotation paragraphs
+  my $abstract = $lib->field($tag, 'abstract');
+  my $annote = $lib->field($tag, 'annote');
   if (defined $abstract && $abstract ne '') {
     my @pars = split /\n(\s*\n)+|\\par\b\s*/, $abstract;
     my $lead = b("$abstractLead. ");
@@ -503,6 +531,7 @@ sub entryHtml {
   }
 
   # Endmatter
+  my $srcfile = $lib->field($tag, '_file');
   push @body, hr, "Source BibTeX: ", $srcfile, footer();
 
   return html(
@@ -541,7 +570,7 @@ sub appendElementItem {
   my $editorSep = undef;
   foreach my $editor (@editors) {
     push @downEditorLinks, ', ' if $editorSep;
-    push @downEditorLinks, a(-href=>"editor/".cleanUrl($editor).".html",
+    push @downEditorLinks, a(-href=>"author/".cleanUrl($editor).".html",
                              cleanString($editor));
     push @overEditorLinks, ', ' if $editorSep;
     push @overEditorLinks, a(-href=>"../author/".cleanUrl($editor).".html",
