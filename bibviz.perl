@@ -4,6 +4,8 @@
 #
 # (C) 2016, John Maraist, licensed under GPL3, see file included
 
+use strict;
+use warnings;
 use Cwd;
 use Encode;
 use FindBin;
@@ -219,9 +221,9 @@ my $html = html(
   head(
     title($allPapersTitle)
   ),
-  body(header('papers'),
+  body(pageHeader('papers'),
        h1($allPapersTitle), $allList,
-       footer('papers'))
+       pageFooter('papers'))
     );
 
 ## Create/append per-entity stuff
@@ -274,11 +276,11 @@ foreach my $author (sort lastNameSorter (keys %authorPapers)) {
 
 ## Close the all-authors page
 print ALLAUTHORS html(head(title($allAuthorsTitle)),
-                      body(header('authors'),
+                      body(pageHeader('authors'),
                            h1($allAuthorsTitle),
                            ($authorPageBullets
                             ? $authorList : p(@$authorList, ".")),
-                           footer('authors')));
+                           pageFooter('authors')));
 close ALLAUTHORS;
 
 ## Make the authors-by-alpha pages
@@ -298,11 +300,11 @@ foreach my $idx (keys %authorsByAlpha) {
 
   open BYALPHA, ">$htmlOutputDir/author/alpha/$idx.html";
   print BYALPHA html(head(title($allAuthorsTitle . " - " . uc($idx))),
-                     body(header(),
+                     body(pageHeader(),
                           h1($allAuthorsTitle . " - " . uc($idx)),
                           ($authorPageBullets
                            ? $alphaList : p(@$alphaList, ".")),
-                          footer()));
+                          pageFooter()));
   close BYALPHA;
 }
 
@@ -310,9 +312,9 @@ foreach my $idx (keys %authorsByAlpha) {
 open ALLKEYWORDS, ">$htmlOutputDir/keyword/index.html";
 my $keywordList = div();
 my $keywordsPage = html(head(title($allKeywordTitle)),
-                        body(header('keywords'),
+                        body(pageHeader('keywords'),
                              h1($allKeywordTitle), $keywordList,
-                             footer('keywords')));
+                             pageFooter('keywords')));
 
 ## Keyword pages.
 print "Writing keyword pages.\n" if $verbose>0;
@@ -400,10 +402,10 @@ sub authorHtml {
 
   return html(
     head(title($author)),
-    body(header(), h1($author),
+    body(pageHeader(), h1($author),
          h2($asAuthorSubhead), $paperList,
          h2($asEditorSubhead), $editorList,
-         footer()));
+         pageFooter()));
 }
 
 sub keywordHtml {
@@ -420,29 +422,55 @@ sub keywordHtml {
 
   return html(
     head(title($showKeyword)),
-    body(header(), h1($showKeyword), $paperList, footer()));
+    body(pageHeader(), h1($showKeyword), $paperList, pageFooter()));
 }
 
-sub entryHtml {
+sub entryDetailItems {
   my $tag = shift;
-  my @body = (header());
+  my $bibtexType = $lib->type($tag);
 
-  my $authorList=$lib->field($tag, 'author');
-  my @authors = split / and /, $authorList;
-  $authorList =~ s/ and /, /g;
+  my @body = ();
+  my @sep = ();
+  my $commenced = 0;
 
-  my @downAuthorLinks = ();
-  my @overAuthorLinks = ();
-  my $sep = undef;
-  foreach my $author (@authors) {
-    push @downAuthorLinks, ', ' if $sep;
-    push @downAuthorLinks, a(-href=>"author/".cleanUrl($author).".html",
-                             cleanString($author));
-    push @overAuthorLinks, ', ' if $sep;
-    push @overAuthorLinks, a(-href=>"../author/".cleanUrl($author).".html",
-                             cleanString($author));
-    $sep = 1;
-  }
+  my $uncommenced = sub {
+    $commenced = 0;
+  };
+
+  my $setSeparator = sub {
+    @sep = @_;
+  };
+
+  my $separated = sub {
+    my $item = shift;
+    my $actuals = shift;
+    my $nextSep = shift;
+
+    if (defined $item && $item ne '') {
+      push @body, @sep, @$actuals;
+      $setSeparator->(@$nextSep) if defined $nextSep;
+      $commenced = 1;
+    }
+  };
+
+  my $sepByCommenced = sub {
+    my $item = shift;
+    my $freshActuals = shift;
+    my $continuedActuals = shift;
+    my $nextSep = shift;
+
+    if ($commenced) {
+      $separated->($item, $continuedActuals, $nextSep);
+    } else {
+      $separated->($item, $freshActuals, $nextSep);
+    }
+  };
+
+  my $simpleSeparated = sub {
+    my $item = shift;
+    my $nextSep = shift;
+    $separated->($item, [$item], $nextSep);
+  };
 
   my $editorList=$lib->field($tag, 'editor');
   my @editors = split / and /, $editorList;
@@ -455,35 +483,9 @@ sub entryHtml {
   my $volume=$lib->field($tag, 'volume');
   my $number=$lib->field($tag, 'number');
   my $year = $lib->field($tag, 'year');
-  my $paperfile = $lib->field($tag, 'file');
-
-  push @body, h1($title);
-  push @body, @overAuthorLinks;
-  if (defined $journal && $journal ne '') {
-    push @body, br, i($journal);
-    push @body, " " if (defined $volume && $volume ne '')
-        || (defined $number && $number ne '');
-    push @body, b($volume)  if defined $volume && $volume ne '';
-    push @body, ":"
-        if defined $volume && $volume ne '' && defined $number && $number ne '';
-    push @body, $number  if defined $number && $number ne '';
-  }
-  push @body, br, i($booktitle)
-      if defined $booktitle && $booktitle ne '' && $booktitle ne $title;
-  if (defined $paperfile && $paperfile ne '') {
-    my @files = split /$filesSep/, $paperfile;
-    my $fsep='';
-    push @body, br, "File", ($#files>0 ? "s" : ""), ": ";
-    foreach my $file (@files) {
-      push @body, $fsep, a(-href=>"../$urlPathToPapersRoot/$file", $file);
-      delete $unusedPapers{$file};
-      $fsep = ', ';
-    }
-  }
-
-  # Unformatted and irrespective of type, just dumping all the fields
-  # we extracted.
+  my $institution = $lib->field($tag, 'institution');
   my $pages = $lib->field($tag, 'pages');
+  $pages =~ s/--+/-/g if defined $pages;
   my $month = $lib->field($tag, 'month');
   my $note = $lib->field($tag, 'note');
   my $publisher = $lib->field($tag, 'publisher');
@@ -495,20 +497,335 @@ sub entryHtml {
   my $organization = $lib->field($tag, 'organization');
   my $school = $lib->field($tag, 'school');
   my $type = $lib->field($tag, 'type');
-  push @body, br, br, "Editors: ", $editorList
-      if defined $editorList && $editorList ne '';
-  push @body, br, "Pages: ", $pages if defined $pages && $pages ne '';
-  push @body, br, "Month: ", $month if defined $month && $month ne '';
-  push @body, br, "Note: ", $note if defined $note && $note ne '';
-  push @body, br, "Publisher: ", $publisher if defined $publisher && $publisher ne '';
-  push @body, br, "Address: ", $address if defined $address && $address ne '';
-  push @body, br, "Edition: ", $edition if defined $edition && $edition ne '';
-  push @body, br, "Howpublished: ", $howpublished if defined $howpublished && $howpublished ne '';
-  push @body, br, "Chapter: ", $chapter if defined $chapter && $chapter ne '';
-  push @body, br, "Series: ", $series if defined $series && $series ne '';
-  push @body, br, "Organization: ", $organization if defined $organization && $organization ne '';
-  push @body, br, "School: ", $school if defined $school && $school ne '';
-  push @body, br, "Type: ", $type if defined $type && $type ne '';
+
+  my $separatedDate = sub {
+    my $nextSep = shift;
+    my $dateSep = (defined $month && $month ne '') ? "$month " : '';
+    if (defined $year && $year ne '') {
+      push @body, @sep, $dateSep, $year;
+      $setSeparator->(@$nextSep) if defined $nextSep;
+      $commenced = 1;
+    }
+  };
+
+  if ($bibtexType eq 'ARTICLE') {
+    push @body, br, i($journal);
+    push @body, " " if (defined $volume && $volume ne '')
+        || (defined $number && $number ne '');
+    push @body, b($volume)  if defined $volume && $volume ne '';
+    push @body, ":"
+        if defined $volume && $volume ne '' && defined $number && $number ne '';
+    push @body, $number  if defined $number && $number ne '';
+    my $dateSep = defined $month && $month ne '' ? ", $month " : ', ';
+    push @body, $dateSep, $year  if defined $year && $year ne '';
+    push @body, ', p.', $pages  if defined $pages && $pages ne '';
+    push @body, br, $note  if defined $note && $note ne '';
+
+  } elsif ($bibtexType eq 'BOOK') {
+    push @body, ' (', $editorList, ($#editors>0 ? "eds." : "ed."), ')'
+        if defined $editorList && $editorList ne '';
+
+    $setSeparator->(br);
+    $simpleSeparated->($publisher, [', ']);
+    $simpleSeparated->($address, [', ']);
+    $separatedDate->();
+
+    $setSeparator->(br);
+    my $inSeries;
+    if (defined $series && $series ne '') {
+      push @body, @sep, $series; $setSeparator->(', '); $inSeries=1; }
+    if (defined $volume && $volume ne '') {
+      push @body, @sep, ($inSeries ? "volume " : "Volume "), $volume;
+      $setSeparator->(', '); $inSeries = 1;
+    } elsif (defined $number && $number ne '') {
+      push @body, @sep, ($inSeries ? "number " : "Number "), $number;
+      $setSeparator->(', '); $inSeries = 1; }
+    if (defined $edition && $edition ne '') {
+      if ($edition =~ /^[0-9]+$/) {
+        push @body, @sep, makeCardinal($edition), " edition";
+      } else {
+        push @body, @sep, "edition ", $edition;
+      }
+    }
+    push @body, br, 'AKA ', i($booktitle)
+        if defined $booktitle && $booktitle ne '' && $booktitle ne $title;
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'BOOKLET') {
+    $setSeparator->(br);
+    $separated->($howpublished, [uc1($howpublished)]);
+    $simpleSeparated->($address);
+    $separatedDate->();
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'INBOOK') {
+    push @body, br, 'In ';
+    push @body, $editorList, ' (ed', ($#editors>0 ? 's' : ''), '.), '
+        if defined $editorList && $editorList ne '';
+    push @body, $type, " " if defined $type && $type ne '';
+    push @body, ((defined $booktitle && $booktitle ne '')
+                 ? i($booktitle) : 'book title not given ');
+
+    $setSeparator->(', ');
+    $separated->($chapter, ["Chapter ", $chapter]);
+    $separated->($pages, ["p.", $pages]);
+    $simpleSeparated->($type);
+
+    $setSeparator->(br);
+    $simpleSeparated->($publisher);
+    $simpleSeparated->($address);
+    $separatedDate->();
+
+    $setSeparator->(br);
+    $uncommenced->();
+    $simpleSeparated->($series, [', ']);
+    $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
+    $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
+    if (defined $edition && $edition ne '') {
+      if ($edition =~ /^[0-9]+$/) {
+        push @body, @sep, makeCardinal($edition), " edition";
+      } else {
+        push @body, @sep, "edition ", $edition;
+      }
+    }
+
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'INCOLLECTION') {
+    push @body, br, 'In ';
+    push @body, $editorList, ' (ed', ($#editors>0 ? 's' : ''), '.), '
+        if defined $editorList && $editorList ne '';
+    push @body, ((defined $booktitle && $booktitle ne '')
+                 ? i($booktitle) : 'book title not given ');
+
+    $setSeparator->(', ');
+    $separated->($chapter, ["Chapter ", $chapter]);
+    $separated->($pages, ["p.", $pages]);
+    $simpleSeparated->($type);
+
+    $setSeparator->(br);
+    $simpleSeparated->($publisher);
+    $simpleSeparated->($address);
+    $separatedDate->();
+
+    $setSeparator->(br);
+    $uncommenced->();
+    $simpleSeparated->($series, [', ']);
+    $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
+    $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
+    if (defined $edition && $edition ne '') {
+      if ($edition =~ /^[0-9]+$/) {
+        push @body, @sep, makeCardinal($edition), " edition";
+      } else {
+        push @body, @sep, "edition ", $edition;
+      }
+    }
+
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'INPROCEEDINGS' || $bibtexType eq 'CONFERENCE') {
+    push @body, br, 'In ';
+    push @body, $editorList, ' (ed', ($#editors>0 ? 's' : ''), '.), '
+        if defined $editorList && $editorList ne '';
+    push @body, ((defined $booktitle && $booktitle ne '')
+                 ? i($booktitle) : 'book title not given ');
+
+    $setSeparator->(', ');
+    $separated->($chapter, ["Chapter ", $chapter]);
+    $separated->($pages, ["p.", $pages]);
+    $simpleSeparated->($type);
+
+    $setSeparator->(br);
+    $uncommenced->();
+    $simpleSeparated->($series, [', ']);
+    $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
+    $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
+    if (defined $edition && $edition ne '') {
+      if ($edition =~ /^[0-9]+$/) {
+        push @body, @sep, makeCardinal($edition), " edition";
+      } else {
+        push @body, @sep, "edition ", $edition;
+      }
+      $setSeparator->(', ');
+    }
+
+    $setSeparator->(br);
+    $simpleSeparated->($publisher, [', ']);
+    $simpleSeparated->($organization, [', ']);
+    $simpleSeparated->($address, [', ']);
+    $separatedDate->();
+
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'MANUAL') {
+    $setSeparator->(br);
+    if (defined $edition && $edition ne '') {
+      if ($edition =~ /^[0-9]+$/) {
+        push @body, @sep, makeCardinal($edition), " edition";
+      } else {
+        push @body, @sep, "Edition ", $edition;
+      }
+      $setSeparator->(', ');
+    }
+    $simpleSeparated->($organization, [', ']);
+    $simpleSeparated->($address, [', ']);
+    $separatedDate->();
+
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'MASTERSTHESIS') {
+    push @body, br, (defined $type && $type ne '' ? $type : "Masters thesis");
+    $setSeparator->(', ');
+    $simpleSeparated->($school);
+    $simpleSeparated->($address);
+    $separatedDate->();
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'MISC') {
+    $setSeparator->(br);
+    push @body, @sep, $howpublished
+        if defined $howpublished && $howpublished ne '';
+    $separatedDate->();
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'PHDTHESIS') {
+    push @body, br, (defined $type && $type ne '' ? $type : "Ph.D. thesis");
+    $setSeparator->(', ');
+    $simpleSeparated->($school);
+    $simpleSeparated->($address);
+    $separatedDate->();
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'PROCEEDINGS') {
+    push @body, $editorList, ' (ed', ($#editors>0 ? 's' : ''), '.), '
+        if defined $editorList && $editorList ne '';
+
+    $setSeparator->(br);
+    $simpleSeparated->($publisher, [', ']);
+    $simpleSeparated->($organization, [', ']);
+    $simpleSeparated->($address, [', ']);
+    $separatedDate->();
+
+    $setSeparator->(br);
+    $uncommenced->();
+    $simpleSeparated->($series, [', ']);
+    $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
+    $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
+    if (defined $edition && $edition ne '') {
+      if ($edition =~ /^[0-9]+$/) {
+        push @body, @sep, makeCardinal($edition), " edition";
+      } else {
+        push @body, @sep, "edition ", $edition;
+      }
+    }
+
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'TECHREPORT') {
+    push @body, br, (defined $type && $type ne '' ? $type : "Technical report");
+    push @body, " ", $number if defined $number && $number ne '';
+    $setSeparator->(', ');
+    $simpleSeparated->($institution);
+    $simpleSeparated->($address);
+    $separatedDate->();
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } elsif ($bibtexType eq 'UNPUBLISHED') {
+    push @body, br, "Unpublished";
+    $separatedDate->();
+    $setSeparator->(br);
+    $simpleSeparated->($note);
+
+  } else {
+    push @body, br, "Unknown BibTeX type, $bibtexType";
+    $setSeparator->(br);
+    $separated->($editorList, ["Editors: ", $editorList]);
+    $separated->($booktitle, ["Book title: ", $booktitle]);
+    $separated->($journal, ["Journal: ", $journal]);
+    $separated->($crossref, ["Crossref: ", $crossref]);
+
+    $uncommenced->();
+    $simpleSeparated->($series, [', ']);
+    $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
+    $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
+    if (defined $edition && $edition ne '') {
+      if ($edition =~ /^[0-9]+$/) {
+        push @body, @sep, makeCardinal($edition), " edition";
+      } else {
+        push @body, @sep, "edition ", $edition;
+      }
+    }
+
+    $setSeparator->(br);
+    $separated->($pages, ["Pages: ", $pages]);
+    $separated->($month, ["Month: ", $month]);
+    $separated->($year, ["Year: ", $year]);
+    $separated->($institution, ["Institution: ", $institution]);
+    $separated->($publisher, ["Publisher: ", $publisher]);
+    $separated->($address, ["Address: ", $address]);
+    $separated->($howpublished, ["Howpublished: ", $howpublished]);
+    $separated->($chapter, ["Chapter: ", $chapter]);
+    $separated->($organization, ["Organization: ", $organization]);
+    $separated->($school, ["School: ", $school]);
+    $separated->($type, ["Type: ", $type]);
+    $simpleSeparated->($note);
+  }
+
+  my $paperfile = $lib->field($tag, 'file');
+  if (defined $paperfile && $paperfile ne '') {
+    my @files = split /$filesSep/, $paperfile;
+    my $fsep='';
+    push @body, br, "File", ($#files>0 ? "s" : ""), ": ";
+    foreach my $file (@files) {
+      push @body, $fsep, a(-href=>"../$urlPathToPapersRoot/$file", $file);
+      delete $unusedPapers{$file};
+      $fsep = ', ';
+    }
+  }
+
+  return @body;
+}
+
+sub makeCardinal {
+  my $i = shift;
+  return $i."th" if $i =~ /1[123]$/;
+  return $i."st" if $i =~ /1$/;
+  return $i."nd" if $i =~ /2$/;
+  return $i."rd" if $i =~ /3$/;
+  return $i."th";
+}
+
+sub entryHtml {
+  my $tag = shift;
+  my $title=$lib->field($tag, 'title');
+
+  my $authorList=$lib->field($tag, 'author');
+  my @authors = split / and /, $authorList;
+  $authorList =~ s/ and /, /g;
+
+  my @overAuthorLinks = ();
+  my $sep = undef;
+  foreach my $author (@authors) {
+    push @overAuthorLinks, ', ' if $sep;
+    push @overAuthorLinks, a(-href=>"../author/".cleanUrl($author).".html",
+                             cleanString($author));
+    $sep = 1;
+  }
+
+  my @starts = (pageHeader(), h1($title), @overAuthorLinks);
+  my @details = entryDetailItems($tag);
+  my @ends = ();
 
   # Abstract and annotation paragraphs
   my $abstract = $lib->field($tag, 'abstract');
@@ -521,22 +838,22 @@ sub entryHtml {
       $ab->appendChild(p($lead, $par));
       $lead='';
     }
-    push @body, i($ab);
+    push @ends, i($ab);
   }
   if (defined $annote && $annote ne '') {
     my @pars = split /\n(\s*\n)+|\\par\b\s*/, $annote;
     foreach my $par (@pars) {
-      push @body, p($par);
+      push @ends, p($par);
     }
   }
 
   # Endmatter
   my $srcfile = $lib->field($tag, '_file');
-  push @body, hr, "Source BibTeX: ", $srcfile, footer();
+  push @ends, hr, "Source BibTeX: ", $srcfile, pageFooter();
 
   return html(
     head(title($title)),
-    body(@body)
+    body(@starts, @details, @ends)
   );
 }
 
@@ -659,14 +976,14 @@ sub appendElementItem {
   if (defined $files && $files ne '') {
     my @files = split /$filesSep/, $files;
     my $fsep='';
-    my $slug = 'file';
-    $slug = 'PDF' if $file =~ /\.pdf$/i;
-    $slug = 'PS' if $file =~ /\.ps$/i;
-    $slug = 'word' if $file =~ /\.doc$/i;
-    $slug = 'text' if $file =~ /\.txt$/i;
-    $slug = 'HTML' if $file =~ /\.html?$/i;
     push @contents, " [";
     foreach my $file (@files) {
+      my $slug = 'file';
+      $slug = 'PDF' if $file =~ /\.pdf$/i;
+      $slug = 'PS' if $file =~ /\.ps$/i;
+      $slug = 'word' if $file =~ /\.doc$/i;
+      $slug = 'text' if $file =~ /\.txt$/i;
+      $slug = 'HTML' if $file =~ /\.html?$/i;
       push @contents, $fsep, a(-href=>"../$urlPathToPapersRoot/$file", $slug);
       $fsep = ', ';
     }
@@ -702,18 +1019,19 @@ sub cleanUrl {
   return $s;
 }
 
-sub header {
+sub pageHeader {
   my $for = shift;
   return div($mainTitle, ": ", navLineContents($for), hr);
 }
 
-sub footer {
+sub pageFooter {
   my $for = shift;
   return div(hr, navLineContents($for));
 }
 
 sub navLineContents {
   my $for = shift;
+  $for = '' unless defined $for;
   return (($for eq 'top'
            ? b($topNav)
            : a(-href=>"../index.html", $topNav)),
