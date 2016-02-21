@@ -389,23 +389,27 @@ sub authorHtml {
   my $author = shift;
   my $refs = shift;
   my $editorRefs = shift;
+  my @body = (pageHeader(), h1($author));
 
-  my $paperList = ul();
-  foreach my $ref (@$refs) {
-    appendElementItem($paperList, $ref);
+  if ($#{$refs} > -1) {
+    my $paperList = ul();
+    foreach my $ref (@$refs) {
+      appendElementItem($paperList, $ref);
+    }
+    push @body, h2($asAuthorSubhead), $paperList;
   }
 
-  my $editorList = ul();
-  foreach my $ref (@$refs) {
-    appendElementItem($editorList, $ref);
+  if ($#{$editorRefs} > -1) {
+    my $editorList = ul();
+    foreach my $ref (@$editorRefs) {
+      appendElementItem($editorList, $ref);
+    }
+    push @body, h2($asEditorSubhead), $editorList;
   }
 
   return html(
     head(title($author)),
-    body(pageHeader(), h1($author),
-         h2($asAuthorSubhead), $paperList,
-         h2($asEditorSubhead), $editorList,
-         pageFooter()));
+    body(@body, pageFooter()));
 }
 
 sub keywordHtml {
