@@ -522,17 +522,16 @@ sub entryDetailItems {
   };
 
   if ($bibtexType eq 'ARTICLE') {
-    push @body, br, i($journal);
-    push @body, " " if (defined $volume && $volume ne '')
-        || (defined $number && $number ne '');
-    push @body, b($volume)  if defined $volume && $volume ne '';
-    push @body, ":"
-        if defined $volume && $volume ne '' && defined $number && $number ne '';
-    push @body, $number  if defined $number && $number ne '';
-    my $dateSep = defined $month && $month ne '' ? ", $month " : ', ';
-    push @body, $dateSep, $year  if defined $year && $year ne '';
-    push @body, ', p.', $pages  if defined $pages && $pages ne '';
-    push @body, br, $note  if defined $note && $note ne '';
+    $setSeparator->(br);
+    $separated->($journal, [i($journal)], [' ']);
+    $separated->($volume, [b($volume)], [':']);
+    $simpleSeparated->($number, [', ']);
+
+    $setSeparator->(', ') if $commenced;
+    $separatedDate->();
+    $separated->($pages, ['p.', $pages]);
+    $setSeparator->(br);
+    $simpleSeparated->($note);
 
   } elsif ($bibtexType eq 'BOOK') {
     push @body, ' (', $editorList, ($#editors>0 ? "eds." : "ed."), ')'
@@ -549,9 +548,10 @@ sub entryDetailItems {
     $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
     $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
     $separatedEdition->();
+
+    $setSeparator->(br);
     push @body, br, 'AKA ', i($booktitle)
         if defined $booktitle && $booktitle ne '' && $booktitle ne $title;
-    $setSeparator->(br);
     $simpleSeparated->($note);
 
   } elsif ($bibtexType eq 'BOOKLET') {
