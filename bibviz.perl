@@ -530,6 +530,7 @@ sub entryDetailItems {
     $setSeparator->(', ') if $commenced;
     $separatedDate->();
     $separated->($pages, ['p.', $pages]);
+
     $setSeparator->(br);
     $simpleSeparated->($note);
 
@@ -595,7 +596,7 @@ sub entryDetailItems {
     push @body, $editorList, ' (ed', ($#editors>0 ? 's' : ''), '.), '
         if defined $editorList && $editorList ne '';
     push @body, ((defined $booktitle && $booktitle ne '')
-                 ? i($booktitle) : 'book title not given ');
+                 ? i($booktitle) : 'collection title not given ');
 
     $setSeparator->(', ');
     $separated->($chapter, ["Chapter ", $chapter]);
@@ -622,7 +623,7 @@ sub entryDetailItems {
     push @body, $editorList, ' (ed', ($#editors>0 ? 's' : ''), '.), '
         if defined $editorList && $editorList ne '';
     push @body, ((defined $booktitle && $booktitle ne '')
-                 ? i($booktitle) : 'book title not given ');
+                 ? i($booktitle) : 'proceedings title not given ');
 
     $setSeparator->(', ');
     $separated->($chapter, ["Chapter ", $chapter]);
