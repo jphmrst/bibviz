@@ -29,7 +29,7 @@ my $baseDir = $originalWorkingDir;
 my $urlPathToPapersRoot = "../papers";
 my $papersBaseDir;
 my $htmlOutputDir;
-my $authorPageBullets = 0;
+my $authorPageNoBullets = 0;
 my $keywordsSep = "\\s*,\\s*";
 my $citationsSep = "\\s*,\\s*";
 my $filesSep = "\\s*,\\s*";
@@ -79,7 +79,7 @@ GetOptions("main-title=s" => \$mainTitle,
            "files-dir|f=s" => \$papersBaseDir,
            "output-dir|o=s" => \$htmlOutputDir,
            "path-to-papers=s" => \$urlPathToPapersRoot,
-           "author-page-bullet-list" => \$authorPageBullets,
+           "author-page-wrapped-list" => \$authorPageNoBullets,
            "keywords-front-page-threshhold=i" => \$keywordFrontpageThreshhold,
            "keywords-sep=s" => \$keywordsSep,
            "citations-sep=s" => \$citationsSep,
@@ -243,7 +243,7 @@ close ALLPAPERS;
 
 ## Open the all-authors page
 open ALLAUTHORS, ">$htmlOutputDir/author/index.html";
-my $authorList = $authorPageBullets ? ul() : [];
+my $authorList = $authorPageNoBullets ? [] : ul();
 my $apageSep = "";
 
 ## Author/editor pages.
@@ -251,11 +251,11 @@ print "Writing author pages.\n" if $verbose>0;
 my %authorsByAlpha = ();
 foreach my $author (sort lastNameSorter (keys %authorPapers)) {
 
-  if ($authorPageBullets) {
-    $authorList->appendChild(li(a(-href=>(cleanUrl($author).".html"),$author)));
-  } else {
+  if ($authorPageNoBullets) {
     push @$authorList, $apageSep, a(-href=>(cleanUrl($author).".html"),$author);
     $apageSep = " - ";
+  } else {
+    $authorList->appendChild(li(a(-href=>(cleanUrl($author).".html"),$author)));
   }
 
   my $lastName = pullLastName($author);
@@ -278,23 +278,23 @@ foreach my $author (sort lastNameSorter (keys %authorPapers)) {
 print ALLAUTHORS html(head(title($allAuthorsTitle)),
                       body(pageHeader('authors'),
                            h1($allAuthorsTitle),
-                           ($authorPageBullets
-                            ? $authorList : p(@$authorList, ".")),
+                           ($authorPageNoBullets
+                            ? p(@$authorList, ".") : $authorList),
                            pageFooter('authors')));
 close ALLAUTHORS;
 
 ## Make the authors-by-alpha pages
 foreach my $idx (keys %authorsByAlpha) {
-  my $alphaList = $authorPageBullets ? ul() : [];
+  my $alphaList = $authorPageNoBullets ? [] : ul();
   my $alphaSep = "";
   foreach my $author (@{$authorsByAlpha{$idx}}) {
-    if ($authorPageBullets) {
-      $alphaList->appendChild(li(a(-href=>('../'.cleanUrl($author).".html"),
-                                   $author)));
-    } else {
+    if ($authorPageNoBullets) {
       push @$alphaList, $alphaSep, a(-href=>('../'.cleanUrl($author).".html"),
                                      $author);
       $alphaSep = " - ";
+    } else {
+      $alphaList->appendChild(li(a(-href=>('../'.cleanUrl($author).".html"),
+                                   $author)));
     }
   }
 
@@ -302,8 +302,8 @@ foreach my $idx (keys %authorsByAlpha) {
   print BYALPHA html(head(title($allAuthorsTitle . " - " . uc($idx))),
                      body(pageHeader(),
                           h1($allAuthorsTitle . " - " . uc($idx)),
-                          ($authorPageBullets
-                           ? $alphaList : p(@$alphaList, ".")),
+                          ($authorPageNoBullets
+                           ? p(@$alphaList, ".") : $alphaList),
                           pageFooter()));
   close BYALPHA;
 }
@@ -539,7 +539,7 @@ sub entryDetailItems {
     $simpleSeparated->($note);
 
   } elsif ($bibtexType eq 'BOOK') {
-    push @body, ' (', $editorList, ($#editors>0 ? "eds." : "ed."), ')'
+    push @body, $editorList, ' (', ($#editors>0 ? "eds." : "ed."), ')'
         if defined $editorList && $editorList ne '';
 
     $setSeparator->(br);
@@ -1071,11 +1071,12 @@ Path used as a component of the URLs linking generated pages for
 papers to the files associated with a page.  By default, B<../>
 followed by the files directory above.
 
-=item B<--author-page-bullet-list=FLAG>
+=item B<--author-page-wrapped-list=FLAG>
 
-A flag controlling the layout of the all-authors page.  If this flag
-is set, the authors are arranged vertically in a bulleted list;
-otherwise, the name are placed in a single paragraph.
+A flag controlling the layout of the author list pages.  If this flag
+is set, the authors are listed in a single paragraph, wrapped as
+ordinary text.  Otherwise and by default, they are arranged vertically
+in a bulleted list.
 
 =item B<--keywords-front-page-threshhold=N>
 
