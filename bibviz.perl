@@ -508,6 +508,19 @@ sub entryDetailItems {
     }
   };
 
+  my $separatedEdition = sub {
+    my $nextSep = shift;
+    if (defined $edition && $edition ne '') {
+      if ($edition =~ /^[0-9]+$/) {
+        push @body, @sep, makeCardinal($edition), " edition";
+      } else {
+        push @body, @sep, "edition ", $edition;
+      }
+      $setSeparator->(@$nextSep) if defined $nextSep;
+      $commenced = 1;
+    }
+  }
+
   if ($bibtexType eq 'ARTICLE') {
     push @body, br, i($journal);
     push @body, " " if (defined $volume && $volume ne '')
@@ -531,22 +544,11 @@ sub entryDetailItems {
     $separatedDate->();
 
     $setSeparator->(br);
-    my $inSeries;
-    if (defined $series && $series ne '') {
-      push @body, @sep, $series; $setSeparator->(', '); $inSeries=1; }
-    if (defined $volume && $volume ne '') {
-      push @body, @sep, ($inSeries ? "volume " : "Volume "), $volume;
-      $setSeparator->(', '); $inSeries = 1;
-    } elsif (defined $number && $number ne '') {
-      push @body, @sep, ($inSeries ? "number " : "Number "), $number;
-      $setSeparator->(', '); $inSeries = 1; }
-    if (defined $edition && $edition ne '') {
-      if ($edition =~ /^[0-9]+$/) {
-        push @body, @sep, makeCardinal($edition), " edition";
-      } else {
-        push @body, @sep, "edition ", $edition;
-      }
-    }
+    $uncommenced->();
+    $simpleSeparated->($series, [', ']);
+    $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
+    $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
+    $separatedEdition->();
     push @body, br, 'AKA ', i($booktitle)
         if defined $booktitle && $booktitle ne '' && $booktitle ne $title;
     $setSeparator->(br);
@@ -583,13 +585,7 @@ sub entryDetailItems {
     $simpleSeparated->($series, [', ']);
     $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
     $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
-    if (defined $edition && $edition ne '') {
-      if ($edition =~ /^[0-9]+$/) {
-        push @body, @sep, makeCardinal($edition), " edition";
-      } else {
-        push @body, @sep, "edition ", $edition;
-      }
-    }
+    $separatedEdition->();
 
     $setSeparator->(br);
     $simpleSeparated->($note);
@@ -616,13 +612,7 @@ sub entryDetailItems {
     $simpleSeparated->($series, [', ']);
     $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
     $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
-    if (defined $edition && $edition ne '') {
-      if ($edition =~ /^[0-9]+$/) {
-        push @body, @sep, makeCardinal($edition), " edition";
-      } else {
-        push @body, @sep, "edition ", $edition;
-      }
-    }
+    $separatedEdition->();
 
     $setSeparator->(br);
     $simpleSeparated->($note);
@@ -644,14 +634,7 @@ sub entryDetailItems {
     $simpleSeparated->($series, [', ']);
     $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
     $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
-    if (defined $edition && $edition ne '') {
-      if ($edition =~ /^[0-9]+$/) {
-        push @body, @sep, makeCardinal($edition), " edition";
-      } else {
-        push @body, @sep, "edition ", $edition;
-      }
-      $setSeparator->(', ');
-    }
+    $separatedEdition->();
 
     $setSeparator->(br);
     $simpleSeparated->($publisher, [', ']);
@@ -664,14 +647,7 @@ sub entryDetailItems {
 
   } elsif ($bibtexType eq 'MANUAL') {
     $setSeparator->(br);
-    if (defined $edition && $edition ne '') {
-      if ($edition =~ /^[0-9]+$/) {
-        push @body, @sep, makeCardinal($edition), " edition";
-      } else {
-        push @body, @sep, "Edition ", $edition;
-      }
-      $setSeparator->(', ');
-    }
+    $separatedEdition->([', ']);
     $simpleSeparated->($organization, [', ']);
     $simpleSeparated->($address, [', ']);
     $separatedDate->();
@@ -720,13 +696,7 @@ sub entryDetailItems {
     $simpleSeparated->($series, [', ']);
     $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
     $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
-    if (defined $edition && $edition ne '') {
-      if ($edition =~ /^[0-9]+$/) {
-        push @body, @sep, makeCardinal($edition), " edition";
-      } else {
-        push @body, @sep, "edition ", $edition;
-      }
-    }
+    $separatedEdition->([', ']);
 
     $setSeparator->(br);
     $simpleSeparated->($note);
@@ -759,13 +729,7 @@ sub entryDetailItems {
     $simpleSeparated->($series, [', ']);
     $sepByCommenced->($volume, ["Volume ",$volume],["volume ",$volume], [', ']);
     $sepByCommenced->($number, ["Number ",$number],["number ",$number], [', ']);
-    if (defined $edition && $edition ne '') {
-      if ($edition =~ /^[0-9]+$/) {
-        push @body, @sep, makeCardinal($edition), " edition";
-      } else {
-        push @body, @sep, "edition ", $edition;
-      }
-    }
+    $separatedEdition->([', ']);
 
     $setSeparator->(br);
     $separated->($pages, ["Pages: ", $pages]);
