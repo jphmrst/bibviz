@@ -200,11 +200,13 @@ foreach my $tag (@sortedEntries) {
 
   ## Sort papers by author.
   foreach my $author (@authors) {
+    $author = cleanLaTeX($author);
     push @{$authorPapers{$author}}, $tag;
   }
 
   ## Sort papers by editor.
   foreach my $editor (@editors) {
+    $editor = cleanLaTeX($editor);
     push @{$editorPapers{$editor}}, $tag;
   }
 
@@ -965,8 +967,16 @@ sub appendElementItem {
   $enclosure->appendChild(li(@contents));
 }
 
+sub cleanLaTeX {
+  my $s = shift;
+  $s =~ s/(\\[^a-zA-Z0-9]){([a-zA-Z])}/$1$2/g;
+  $s =~ s/{(\\[^a-zA-Z0-9][a-zA-Z])}/$1/g;
+  return $s;
+}
+
 sub cleanString {
   my $s = shift;
+  $s = cleanLaTeX($s);
   # $s =~ s/{\\'{([aeiouAEIOU])}}/\&\1acute;/g;
   # $s =~ s/{\\`{([aeiouAEIOU])}}/\&\1grave;/g;
   # $s =~ s/{\\"{([aeiouAEIOU])}}/\&\1uml;/g;
