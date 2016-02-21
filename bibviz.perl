@@ -519,7 +519,7 @@ sub entryDetailItems {
       $setSeparator->(@$nextSep) if defined $nextSep;
       $commenced = 1;
     }
-  }
+  };
 
   if ($bibtexType eq 'ARTICLE') {
     push @body, br, i($journal);
