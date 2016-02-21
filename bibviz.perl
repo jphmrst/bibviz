@@ -6,6 +6,7 @@
 
 use strict;
 use warnings;
+use utf8;
 use Cwd;
 use Encode;
 use FindBin;
@@ -254,10 +255,12 @@ my %authorsByAlpha = ();
 foreach my $author (sort lastNameSorter (keys %authorPapers)) {
 
   if ($authorPageNoBullets) {
-    push @$authorList, $apageSep, a(-href=>(cleanUrl($author).".html"),$author);
+    push @$authorList, $apageSep, a(-href=>(cleanUrl($author).".html"),
+                                    cleanString($author));
     $apageSep = " - ";
   } else {
-    $authorList->appendChild(li(a(-href=>(cleanUrl($author).".html"),$author)));
+    $authorList->appendChild(li(a(-href=>(cleanUrl($author).".html"),
+                                  cleanString($author))));
   }
 
   my $lastName = pullLastName($author);
@@ -292,11 +295,11 @@ foreach my $idx (keys %authorsByAlpha) {
   foreach my $author (@{$authorsByAlpha{$idx}}) {
     if ($authorPageNoBullets) {
       push @$alphaList, $alphaSep, a(-href=>('../'.cleanUrl($author).".html"),
-                                     $author);
+                                     cleanString($author));
       $alphaSep = " - ";
     } else {
       $alphaList->appendChild(li(a(-href=>('../'.cleanUrl($author).".html"),
-                                   $author)));
+                                   cleanString($author))));
     }
   }
 
@@ -977,18 +980,242 @@ sub cleanLaTeX {
 sub cleanString {
   my $s = shift;
   $s = cleanLaTeX($s);
-  # $s =~ s/{\\'{([aeiouAEIOU])}}/\&\1acute;/g;
-  # $s =~ s/{\\`{([aeiouAEIOU])}}/\&\1grave;/g;
-  # $s =~ s/{\\"{([aeiouAEIOU])}}/\&\1uml;/g;
-  # $s =~ s/{\\'([aeiouAEIOU])}/\&\1acute;/g;
-  # $s =~ s/{\\`([aeiouAEIOU])}/\&\1grave;/g;
-  # $s =~ s/{\\"([aeiouAEIOU])}/\&\1uml;/g;
-  # $s =~ s/\\'{([aeiouAEIOU])}/\&\1acute;/g;
-  # $s =~ s/\\`{([aeiouAEIOU])}/\&\1grave;/g;
-  # $s =~ s/\\"{([aeiouAEIOU])}/\&\1uml;/g;
-  # $s =~ s/\\'([aeiouAEIOU])/\&\1acute;/g;
-  # $s =~ s/\\`([aeiouAEIOU])/\&\1grave;/g;
-  # $s =~ s/\\"([aeiouAEIOU])/\&\1uml;/g;
+  # e.g. C-x 8 ` a
+
+  $s =~ s/\\` *a/à/g;
+  $s =~ s/\\` *e/è/g;
+  $s =~ s/\\` *i/ì/g;
+  $s =~ s/\\` *\\i\b/ì/g;
+  $s =~ s/\\` *o/ò/g;
+  $s =~ s/\\` *u/ù/g;
+  $s =~ s/\\` *A/À/g;
+  $s =~ s/\\` *E/È/g;
+  $s =~ s/\\` *I/Ì/g;
+  $s =~ s/\\` *O/Ò/g;
+  $s =~ s/\\` *U/Ù/g;
+
+  $s =~ s/\\' *a/á/g;
+  $s =~ s/\\' *e/é/g;
+  $s =~ s/\\' *i/í/g;
+  $s =~ s/\\' *\\i\b/í/g;
+  $s =~ s/\\' *o/ó/g;
+  $s =~ s/\\' *u/ú/g;
+  $s =~ s/\\' *y/ý/g;
+  $s =~ s/\\' *A/Á/g;
+  $s =~ s/\\' *E/É/g;
+  $s =~ s/\\' *I/Í/g;
+  $s =~ s/\\' *O/Ó/g;
+  $s =~ s/\\' *U/Ú/g;
+  $s =~ s/\\' *Y/Ý/g;
+
+  $s =~ s/\\" *a/ä/g;
+  $s =~ s/\\" *e/ë/g;
+  $s =~ s/\\" *i/ï/g;
+  $s =~ s/\\" *\\i\b/ï/g;
+  $s =~ s/\\" *o/ö/g;
+  $s =~ s/\\" *u/ü/g;
+  $s =~ s/\\" *y/ÿ/g;
+  $s =~ s/\\" *A/Ä/g;
+  $s =~ s/\\" *E/Ë/g;
+  $s =~ s/\\" *I/Ï/g;
+  $s =~ s/\\" *O/Ö/g;
+  $s =~ s/\\" *U/Ü/g;
+  $s =~ s/\\ss\b/ß/g;
+
+  $s =~ s/\\^ *a/â/g;
+  $s =~ s/\\^ *e/ê/g;
+  $s =~ s/\\^ *i/î/g;
+  $s =~ s/\\^ *\\i\b/î/g;
+  $s =~ s/\\^ *o/ô/g;
+  $s =~ s/\\^ *u/û/g;
+  $s =~ s/\\^ *A/Â/g;
+  $s =~ s/\\^ *E/Ê/g;
+  $s =~ s/\\^ *I/Î/g;
+  $s =~ s/\\^ *O/Ô/g;
+  $s =~ s/\\^ *U/Û/g;
+
+  $s =~ s/\\= *a/ā/g;
+  $s =~ s/\\= *e/ē/g;
+  $s =~ s/\\= *i/ī/g;
+  $s =~ s/\\= *\\i\b/ī/g;
+  $s =~ s/\\= *o/ō/g;
+  $s =~ s/\\= *u/ū/g;
+  $s =~ s/\\= *\\ae\b/ǣ/g;
+  $s =~ s/\\= *A/Ā/g;
+  $s =~ s/\\= *E/Ē/g;
+  $s =~ s/\\= *I/Ī/g;
+  $s =~ s/\\= *O/Ō/g;
+  $s =~ s/\\= *U/Ū/g;
+  $s =~ s/\\= *\\AE\b/Ǣ/g;
+
+  $s =~ s/\\v +c/č/g;
+  $s =~ s/\\v +d/ď/g;
+  $s =~ s/\\v +e/ě/g;
+  $s =~ s/\\v +l/ľ/g;
+  $s =~ s/\\v +n/ň/g;
+  $s =~ s/\\v +r/ř/g;
+  $s =~ s/\\v +s/š/g;
+  $s =~ s/\\v +t/ť/g;
+  $s =~ s/\\v +z/ž/g;
+  $s =~ s/\\v +a/ǎ/g;
+  $s =~ s/\\v +i/ǐ/g;
+  $s =~ s/\\v *\\i\b/ǐ/g;
+  $s =~ s/\\v +o/ǒ/g;
+  $s =~ s/\\v +u/ǔ/g;
+  $s =~ s/\\v +g/ǧ/g;
+  $s =~ s/\\v +k/ǩ/g;
+  $s =~ s/\\v +j/ǰ/g;
+  $s =~ s/\\v +C/Č/g;
+  $s =~ s/\\v +D/Ď/g;
+  $s =~ s/\\v +E/Ě/g;
+  $s =~ s/\\v +L/Ľ/g;
+  $s =~ s/\\v +N/Ň/g;
+  $s =~ s/\\v +R/Ř/g;
+  $s =~ s/\\v +S/Š/g;
+  $s =~ s/\\v +T/Ť/g;
+  $s =~ s/\\v +Z/Ž/g;
+  $s =~ s/\\v +A/Ǎ/g;
+  $s =~ s/\\v +I/Ǐ/g;
+  $s =~ s/\\v +O/Ǒ/g;
+  $s =~ s/\\v +U/Ǔ/g;
+  $s =~ s/\\v +G/Ǧ/g;
+  $s =~ s/\\v +K/Ǩ/g;
+  $s =~ s/\\v *{ *c *}/č/g;
+  $s =~ s/\\v *{ *d *}/ď/g;
+  $s =~ s/\\v *{ *e *}/ě/g;
+  $s =~ s/\\v *{ *l *}/ľ/g;
+  $s =~ s/\\v *{ *n *}/ň/g;
+  $s =~ s/\\v *{ *r *}/ř/g;
+  $s =~ s/\\v *{ *s *}/š/g;
+  $s =~ s/\\v *{ *t *}/ť/g;
+  $s =~ s/\\v *{ *z *}/ž/g;
+  $s =~ s/\\v *{ *a *}/ǎ/g;
+  $s =~ s/\\v *{ *i *}/ǐ/g;
+  $s =~ s/\\v *{ *o *}/ǒ/g;
+  $s =~ s/\\v *{ *u *}/ǔ/g;
+  $s =~ s/\\v *{ *g *}/ǧ/g;
+  $s =~ s/\\v *{ *k *}/ǩ/g;
+  $s =~ s/\\v *{ *j *}/ǰ/g;
+  $s =~ s/\\v *{ *C *}/Č/g;
+  $s =~ s/\\v *{ *D *}/Ď/g;
+  $s =~ s/\\v *{ *E *}/Ě/g;
+  $s =~ s/\\v *{ *L *}/Ľ/g;
+  $s =~ s/\\v *{ *N *}/Ň/g;
+  $s =~ s/\\v *{ *R *}/Ř/g;
+  $s =~ s/\\v *{ *S *}/Š/g;
+  $s =~ s/\\v *{ *T *}/Ť/g;
+  $s =~ s/\\v *{ *Z *}/Ž/g;
+  $s =~ s/\\v *{ *A *}/Ǎ/g;
+  $s =~ s/\\v *{ *I *}/Ǐ/g;
+  $s =~ s/\\v *{ *O *}/Ǒ/g;
+  $s =~ s/\\v *{ *U *}/Ǔ/g;
+  $s =~ s/\\v *{ *G *}/Ǧ/g;
+  $s =~ s/\\v *{ *K *}/Ǩ/g;
+
+  $s =~ s/\\~ *a/ã/g;
+  $s =~ s/\\~ *o/õ/g;
+  $s =~ s/\\~ *n/ñ/g;
+  $s =~ s/\\~ *A/Ã/g;
+  $s =~ s/\\~ *O/Õ/g;
+  $s =~ s/\\~ *N/Ñ/g;
+
+  $s =~ s/\\aa\b/å/g;
+  $s =~ s/\\AA\b/Å/g;
+  $s =~ s/\\o\b/ø/g;
+  $s =~ s/\\O\b/Ø/g;
+  $s =~ s/\\ae\b/æ/g;
+  $s =~ s/\\AE\b/Æ/g;
+  $s =~ s/\\oe\b/œ/g;
+  $s =~ s/\\OE\b/Œ/g;
+  $s =~ s/\\th\b/þ/g;
+  $s =~ s/\\TH\b/Þ/g;
+  $s =~ s/\\dh\b/ð/g;
+  $s =~ s/\\DH\b/Ð/g;
+
+  $s =~ s/\\c +c/ç/g;
+  $s =~ s/\\c *{c}/ç/g;
+  $s =~ s/\\c +C/Ç/g;
+  $s =~ s/\\c *{C}/Ç/g;
+
+  $s =~ s/\\u +a/ă/g;
+  $s =~ s/\\u +e/ĕ/g;
+  $s =~ s/\\u +g/ğ/g;
+  $s =~ s/\\u +i/ĭ/g;
+  $s =~ s/\\u *\\i\b/ĭ/g;
+  $s =~ s/\\u +o/ŏ/g;
+  $s =~ s/\\u +u/ŭ/g;
+  $s =~ s/\\u +A/Ă/g;
+  $s =~ s/\\u +E/Ĕ/g;
+  $s =~ s/\\u +G/Ğ/g;
+  $s =~ s/\\u +I/Ĭ/g;
+  $s =~ s/\\u +O/Ŏ/g;
+  $s =~ s/\\u +U/Ŭ/g;
+  $s =~ s/\\u *{ *a *}/ă/g;
+  $s =~ s/\\u *{ *e *}/ĕ/g;
+  $s =~ s/\\u *{ *g *}/ğ/g;
+  $s =~ s/\\u *{ *i *}/ĭ/g;
+  $s =~ s/\\u *{ *\\i *}/ĭ/g;
+  $s =~ s/\\u *{ *o *}/ŏ/g;
+  $s =~ s/\\u *{ *u *}/ŭ/g;
+  $s =~ s/\\u *{ *A *}/Ă/g;
+  $s =~ s/\\u *{ *E *}/Ĕ/g;
+  $s =~ s/\\u *{ *G *}/Ğ/g;
+  $s =~ s/\\u *{ *I *}/Ĭ/g;
+  $s =~ s/\\u *{ *O *}/Ŏ/g;
+  $s =~ s/\\u *{ *U *}/Ŭ/g;
+
+  $s =~ s/\\. *c/ċ/g;
+  $s =~ s/\\. *e/ė/g;
+  $s =~ s/\\. *g/ġ/g;
+  $s =~ s/\\. *z/ż/g;
+  $s =~ s/\\. *C/Ċ/g;
+  $s =~ s/\\. *E/Ė/g;
+  $s =~ s/\\. *I/İ/g;
+  $s =~ s/\\. *G/Ġ/g;
+  $s =~ s/\\. *Z/Ż/g;
+  $s =~ s/\\. *{ *c *}/ċ/g;
+  $s =~ s/\\. *{ *e *}/ė/g;
+  $s =~ s/\\. *{ *g *}/ġ/g;
+  $s =~ s/\\. *{ *z *}/ż/g;
+  $s =~ s/\\. *{ *C *}/Ċ/g;
+  $s =~ s/\\. *{ *E *}/Ė/g;
+  $s =~ s/\\. *{ *I *}/İ/g;
+  $s =~ s/\\. *{ *G *}/Ġ/g;
+  $s =~ s/\\. *{ *Z *}/Ż/g;
+
+  $s =~ s/\\H +o/ő/g;
+  $s =~ s/\\H +u/ű/g;
+  $s =~ s/\\H +O/Ő/g;
+  $s =~ s/\\H +U/Ű/g;
+  $s =~ s/\\H *{ *o *}/ő/g;
+  $s =~ s/\\H *{ *u *}/ű/g;
+  $s =~ s/\\H *{ *O *}/Ő/g;
+  $s =~ s/\\H *{ *U *}/Ű/g;
+
+  $s =~ s/\\k +a/ą/g;
+  $s =~ s/\\k +e/ę/g;
+  $s =~ s/\\k +i/į/g;
+  $s =~ s/\\k +o/ǫ/g;
+  $s =~ s/\\k +u/ų/g;
+  $s =~ s/\\k +A/Ą/g;
+  $s =~ s/\\k +E/Ę/g;
+  $s =~ s/\\k +I/Į/g;
+  $s =~ s/\\k +O/Ǫ/g;
+  $s =~ s/\\k +U/Ų/g;
+  $s =~ s/\\k *{ *a *}/ą/g;
+  $s =~ s/\\k *{ *e *}/ę/g;
+  $s =~ s/\\k *{ *i *}/į/g;
+  $s =~ s/\\k *{ *o *}/ǫ/g;
+  $s =~ s/\\k *{ *u *}/ų/g;
+  $s =~ s/\\k *{ *A *}/Ą/g;
+  $s =~ s/\\k *{ *E *}/Ę/g;
+  $s =~ s/\\k *{ *I *}/Į/g;
+  $s =~ s/\\k *{ *O *}/Ǫ/g;
+  $s =~ s/\\k *{ *U *}/Ų/g;
+
+  $s =~ s/{([àèìòùÀÈÌÒÙáéíóúýÁÉÍÓÚÝäëïöüÿÄËÏÖÜâêîôûÂÊÎÔÛāēīōūǣĀĒĪŌŪǢčďěľňřšťžǎǐǒǔǧǩǰČĎĚĽŇŘŠŤŽǍǏǑǓǦǨãñõÃÑÕåÅøØæÆŒœßþÞðÐçÇăĕğĭŏŭĂĔĞĬŎŬċėġżĊĖİĠŻőűŐŰąęįǫųĄĘĮǪŲ])}/$1/g;
+  $s =~ s/{}//g;
+
   return $s;
 }
 
