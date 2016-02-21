@@ -136,28 +136,23 @@ unless (-e $htmlOutputDir) {
 }
 mkdir "$htmlOutputDir/papers";
 mkdir "$htmlOutputDir/author";
+mkdir "$htmlOutputDir/author/alpha";
 mkdir "$htmlOutputDir/keyword";
 
 my @entries = $lib->entries;
+sub pullLastName {
+  my $from = shift;
+  if ($from =~ /{([^{]+)}$/) {
+    return $1;
+  } elsif ($from =~ /([^ ]+)$/) {
+    return $1;
+  } else {
+    return $from;
+  }
+}
 sub lastNameSorter {
-  my ($cmpA, $cmpB);
-
-  if ($a =~ /{([^{]+)}$/) {
-    $cmpA = $1;
-  } elsif ($a =~ /([^ ]+)$/) {
-    $cmpA = $1;
-  } else {
-    $cmpA = $a;
-  }
-
-  if ($b =~ /{([^{]+)}$/) {
-    $cmpB = $1;
-  } elsif ($b =~ /([^ ]+)$/) {
-    $cmpB = $1;
-  } else {
-    $cmpB = $b;
-  }
-
+  my $cmpA = pullLastName($a);
+  my $cmpB = pullLastName($b);
   $cmpA =~ s/[^a-zA-Z]//g;
   $cmpB =~ s/[^a-zA-Z]//g;
   return lc($cmpA) cmp lc($cmpB);
@@ -251,6 +246,7 @@ my $apageSep = "";
 
 ## Author/editor pages.
 print "Writing author pages.\n" if $verbose>0;
+my %authorsByAlpha = ();
 foreach my $author (sort lastNameSorter (keys %authorPapers)) {
 
   if ($authorPageBullets) {
@@ -258,6 +254,16 @@ foreach my $author (sort lastNameSorter (keys %authorPapers)) {
   } else {
     push @$authorList, $apageSep, a(-href=>(cleanUrl($author).".html"),$author);
     $apageSep = " - ";
+  }
+
+  my $lastName = pullLastName($author);
+  $lastName =~ s/^\\[^a-zA-Z]//; # Remove an accent-adding command
+                                 # from the start of the string.
+  if ($lastName =~ /^([a-zA-Z])/) {
+    my $idx = lc($1);
+    push @{$authorsByAlpha{$idx}}, $author;
+  } else {
+    push @{$authorsByAlpha{'other'}}, $author;
   }
 
   open HTML, ">$htmlOutputDir/author/".cleanUrl($author).".html";
@@ -274,6 +280,31 @@ print ALLAUTHORS html(head(title($allAuthorsTitle)),
                             ? $authorList : p(@$authorList, ".")),
                            footer('authors')));
 close ALLAUTHORS;
+
+## Make the authors-by-alpha pages
+foreach my $idx (keys %authorsByAlpha) {
+  my $alphaList = $authorPageBullets ? ul() : [];
+  my $alphaSep = "";
+  foreach my $author (@{$authorsByAlpha{$idx}}) {
+    if ($authorPageBullets) {
+      $alphaList->appendChild(li(a(-href=>('../'.cleanUrl($author).".html"),
+                                   $author)));
+    } else {
+      push @$alphaList, $alphaSep, a(-href=>('../'.cleanUrl($author).".html"),
+                                     $author);
+      $alphaSep = " - ";
+    }
+  }
+
+  open BYALPHA, ">$htmlOutputDir/author/alpha/$idx.html";
+  print BYALPHA html(head(title($allAuthorsTitle . " - " . uc($idx))),
+                     body(header(),
+                          h1($allAuthorsTitle . " - " . uc($idx)),
+                          ($authorPageBullets
+                           ? $alphaList : p(@$alphaList, ".")),
+                          footer()));
+  close BYALPHA;
+}
 
 ## Open the all-keywords page
 open ALLKEYWORDS, ">$htmlOutputDir/keyword/index.html";
@@ -323,9 +354,25 @@ foreach my $paper (sort { $a cmp $b } (keys %unusedPapers)) {
                                     $paper)));
   ++$unlinked;
 }
+
+my @authorsLineItems = (a(-href=>"author/index.html", $allAuthorsTitle));
+my $alSep = ": ";
+my @alKeys = keys %authorsByAlpha;
+foreach my $idx (sort { $a cmp $b } @alKeys) {
+  unless ($idx eq 'other') {
+    push @authorsLineItems, $alSep, a(-href=>"author/alpha/$idx.html",
+                                      uc($idx));
+    $alSep = " - ";
+  }
+}
+if (defined $authorsByAlpha{other}) {
+    push @authorsLineItems, $alSep, a(-href=>"author/alpha/other.html",
+                                      'other');
+}
+
 my $topBody = body(h1($mainTitle),
                    ul(li(a(-href=>"papers/index.html", "$allPapersTitle.")),
-                      li(a(-href=>"author/index.html", $allAuthorsTitle)),
+                      li(@authorsLineItems),
                       li(@kwdTopList)));
 if ($unlinked>0) {
   $topBody->appendChild(h2($unreferencedPapersTitle));
@@ -576,6 +623,25 @@ sub appendElementItem {
   } elsif (defined $url && $url ne '') {
     push @contents, $sep, a(-href=>$url, "online");
     $sep = ', ';
+    $fin = '.';
+  }
+
+  my $files = $lib->field($tag, 'file');
+  if (defined $files && $files ne '') {
+    my @files = split /$filesSep/, $files;
+    my $fsep='';
+    my $slug = 'file';
+    $slug = 'PDF' if $file =~ /\.pdf$/i;
+    $slug = 'PS' if $file =~ /\.ps$/i;
+    $slug = 'word' if $file =~ /\.doc$/i;
+    $slug = 'text' if $file =~ /\.txt$/i;
+    $slug = 'HTML' if $file =~ /\.html?$/i;
+    push @contents, " [";
+    foreach my $file (@files) {
+      push @contents, $fsep, a(-href=>"../$urlPathToPapersRoot/$file", $slug);
+      $fsep = ', ';
+    }
+    push @contents, "]";
     $fin = '.';
   }
 
