@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use utf8;
 use Cwd;
-use Encode;
+use Encode qw(decode encode);
 use FindBin;
 use lib (($FindBin::Bin));
 use BibLib;
@@ -54,6 +54,8 @@ my $allAuthorsNav = 'all authors';
 my $allKeywordNav = 'all keywords';
 my $asAuthorSubhead = 'As author';
 my $asEditorSubhead = 'As editor';
+my $inputEncoding = 'iso-8859-1';
+my $outputEncoding = 'iso-8859-1';
 my $verbose = 1;
 
 ## Process command-line options
@@ -75,6 +77,8 @@ GetOptions("main-title=s" => \$mainTitle,
            "some-cites-field=s" => \$citesIncludeField,
            "abstract-field=s" => \$abstractField,
            "local-files-field=s" => \$fileField,
+           "input-encoding=s" => \$inputEncoding,
+           "output-encoding=s" => \$outputEncoding,
 
            "bibtex-src-dir|d=s" => \$baseDir,
            "files-dir|f=s" => \$papersBaseDir,
@@ -236,12 +240,12 @@ foreach my $tag (@sortedEntries) {
   open HTML, ">$htmlOutputDir/papers/$tag.html";
   my $pr = entryHtml($tag);
   # die $tag if $pr =~ /[^\x00-\xFF]/;
-  print HTML $pr;
+  print HTML encode($outputEncoding,$pr);
   close HTML;
 }
 
 # Close the pages of everything.
-print ALLPAPERS $html;
+print ALLPAPERS encode($outputEncoding,$html);
 close ALLPAPERS;
 
 ## Open the all-authors page
@@ -274,18 +278,20 @@ foreach my $author (sort lastNameSorter (keys %authorPapers)) {
   }
 
   open HTML, ">$htmlOutputDir/author/".cleanUrl($author).".html";
-  print HTML authorHtml($author,
-                        $authorPapers{$author}, $editorPapers{$author});
+  print HTML encode($outputEncoding,
+                    authorHtml($author,
+                               $authorPapers{$author}, $editorPapers{$author}));
   close HTML;
 }
 
 ## Close the all-authors page
-print ALLAUTHORS html(head(title($allAuthorsTitle)),
-                      body(pageHeader('authors'),
-                           h1($allAuthorsTitle),
-                           ($authorPageNoBullets
-                            ? p(@$authorList, ".") : $authorList),
-                           pageFooter('authors')));
+print ALLAUTHORS encode($outputEncoding,
+                        html(head(title($allAuthorsTitle)),
+                             body(pageHeader('authors'),
+                                  h1($allAuthorsTitle),
+                                  ($authorPageNoBullets
+                                   ? p(@$authorList, ".") : $authorList),
+                                  pageFooter('authors'))));
 close ALLAUTHORS;
 
 ## Make the authors-by-alpha pages
@@ -304,12 +310,13 @@ foreach my $idx (keys %authorsByAlpha) {
   }
 
   open BYALPHA, ">$htmlOutputDir/author/alpha/$idx.html";
-  print BYALPHA html(head(title($allAuthorsTitle . " - " . uc($idx))),
-                     body(pageHeader(),
-                          h1($allAuthorsTitle . " - " . uc($idx)),
-                          ($authorPageNoBullets
-                           ? p(@$alphaList, ".") : $alphaList),
-                          pageFooter()));
+  print BYALPHA encode($outputEncoding,
+                       html(head(title($allAuthorsTitle . " - " . uc($idx))),
+                            body(pageHeader(undef, "../"),
+                                 h1($allAuthorsTitle . " - " . uc($idx)),
+                                 ($authorPageNoBullets
+                                  ? p(@$alphaList, ".") : $alphaList),
+                                 pageFooter(undef, "../"))));
   close BYALPHA;
 }
 
@@ -343,13 +350,13 @@ foreach my $keyword (sort {$a cmp $b} (keys %keywordPapers)) {
   }
 
   open HTML, ">$htmlOutputDir/keyword/".cleanUrl($keyword).".html";
-  print HTML keywordHtml($keyword, $papers);
+  print HTML encode($outputEncoding,keywordHtml($keyword, $papers));
   close HTML;
 }
 push @kwdTopList, ".";
 
 ## Close the all-keywords page
-print ALLKEYWORDS $keywordsPage;
+print ALLKEYWORDS encode($outputEncoding,$keywordsPage);
 close ALLKEYWORDS;
 
 print "Writing top-level page.\n" if $verbose>0;
@@ -386,7 +393,7 @@ if ($unlinked>0) {
   $topBody->appendChild($unlinkedPapers);
 }
 
-print TOP html(head(title($mainTitle)), $topBody);
+print TOP encode($outputEncoding,html(head(title($mainTitle)), $topBody));
 close TOP;
 exit 0;
 
@@ -394,7 +401,8 @@ sub authorHtml {
   my $author = shift;
   my $refs = shift;
   my $editorRefs = shift;
-  my @body = (pageHeader(), h1($author));
+  my $publishAuthor = cleanString($author);
+  my @body = (pageHeader(), h1($publishAuthor));
 
   if ($#{$refs} > -1) {
     my $paperList = ul();
@@ -413,7 +421,7 @@ sub authorHtml {
   }
 
   return html(
-    head(title($author)),
+    head(title($publishAuthor)),
     body(@body, pageFooter()));
 }
 
@@ -1227,32 +1235,36 @@ sub cleanUrl {
 
 sub pageHeader {
   my $for = shift;
-  return div($mainTitle, ": ", navLineContents($for), hr);
+  my $urlPrefix = shift;
+  return div($mainTitle, ": ", navLineContents($for,$urlPrefix), hr);
 }
 
 sub pageFooter {
   my $for = shift;
-  return div(hr, navLineContents($for));
+  my $urlPrefix = shift;
+  return div(hr, navLineContents($for,$urlPrefix));
 }
 
 sub navLineContents {
   my $for = shift;
+  my $urlPrefix = shift;
+  $urlPrefix = '' unless defined $urlPrefix;
   $for = '' unless defined $for;
   return (($for eq 'top'
            ? b($topNav)
-           : a(-href=>"../index.html", $topNav)),
+           : a(-href=>"$urlPrefix../index.html", $topNav)),
           ", ",
           ($for eq 'papers'
            ? b($allPapersNav)
-           : a(-href=>"../papers/index.html", $allPapersNav)),
+           : a(-href=>"$urlPrefix../papers/index.html", $allPapersNav)),
           ", ",
           ($for eq 'authors'
            ? b($allAuthorsNav)
-           : a(-href=>"../author/index.html", $allAuthorsNav)),
+           : a(-href=>"$urlPrefix../author/index.html", $allAuthorsNav)),
           ", ",
           ($for eq 'keywords'
            ? b($allKeywordNav)
-           : a(-href=>"../keyword/index.html", $allKeywordNav)),
+           : a(-href=>"$urlPrefix../keyword/index.html", $allKeywordNav)),
           ".");
 }
 
@@ -1356,6 +1368,12 @@ takes priority and the file is loaded early.
 
 Names BibTeX files which should B<not> be loaded, even if they match a
 B<--bibfiles> pattern.
+
+=item B<--input-encoding=NAME>, B<--output-encoding=NAME>
+
+Names the character set encoding which Perl should expect of the
+source BibTeX, and generate into its output HTML.  By default, both
+are B<iso-8859-1>.
 
 =back
 

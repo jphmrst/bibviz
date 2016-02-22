@@ -48,11 +48,12 @@ Main options:
     papers to the files associated with a page.  By default, **../**
     followed by the files directory above.
 
-- **--author-page-bullet-list=FLAG**
+- **--author-page-wrapped-list=FLAG**
 
-    A flag controlling the layout of the all-authors page.  If this flag
-    is set, the authors are arranged vertically in a bulleted list;
-    otherwise, the name are placed in a single paragraph.
+    A flag controlling the layout of the author list pages.  If this flag
+    is set, the authors are listed in a single paragraph, wrapped as
+    ordinary text.  Otherwise and by default, they are arranged vertically
+    in a bulleted list.
 
 - **--keywords-front-page-threshhold=N**
 
@@ -95,6 +96,12 @@ Main options:
 
     Names BibTeX files which should **not** be loaded, even if they match a
     **--bibfiles** pattern.
+
+- **--input-encoding=NAME**, **--output-encoding=NAME**
+
+    Names the character set encoding which Perl should expect of the
+    source BibTeX, and generate into its output HTML.  By default, both
+    are **iso-8859-1**.
 
 ## Non-standard BibTeX fields
 
@@ -149,6 +156,12 @@ constructed pages.
 
     The title of the section listing files matching a **--paper-match**
     pattern but not mentioned in any BibTeX entry.
+
+- **--as-author-subhead, --as-editor-subhead**
+
+    On the pages for an individual author/editor, the sections titles for
+    the lists of citations where the individual is an author and is an
+    editor.
 
 - **--abstract-title**
 
