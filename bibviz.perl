@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use utf8;
 use Cwd;
-use Encode qw(decode encode);
+use Encode qw(decode);
 use FindBin;
 use lib (($FindBin::Bin));
 use BibLib;
@@ -18,6 +18,7 @@ use Pod::Usage;
 use File::Path qw( make_path );
 use File::Basename qw( fileparse );
 use HTML::HTML5::Builder qw[:standard];
+use HTML::HTML5::Writer;
 my $originalWorkingDir = getcwd;
 
 ## Variables set by command-line options.
@@ -55,7 +56,7 @@ my $allKeywordNav = 'all keywords';
 my $asAuthorSubhead = 'As author';
 my $asEditorSubhead = 'As editor';
 my $inputEncoding = 'iso-8859-1';
-my $outputEncoding = 'iso-8859-1';
+my $outputEncoding = 'us-ascii';
 my $verbose = 1;
 
 ## Process command-line options
@@ -104,6 +105,11 @@ GetOptions("main-title=s" => \$mainTitle,
            "help|h"       => sub { pod2usage(-exitval => 0, -verbose => 0); })
     or pod2usage(-exitval => 1, -verbose => 0,
                  -msg => 'Error in command line arguments');
+
+## Prepare the output writing agent
+my $writer = HTML::HTML5::Writer->new(charset => $outputEncoding,
+                                      voids => 1,
+                                      polyglot => 1);
 
 ## More defaults
 $papersBaseDir = "${baseDir}/papers"  unless defined $papersBaseDir;
@@ -225,9 +231,7 @@ print "Creating main index.\n" if $verbose>0;
 open ALLPAPERS, ">$htmlOutputDir/papers/index.html";
 my $allList = ul();
 my $html = html(
-  head(
-    title($allPapersTitle)
-  ),
+  head(title($allPapersTitle), Meta(-charset => $outputEncoding)),
   body(pageHeader('papers'),
        h1($allPapersTitle), $allList,
        pageFooter('papers'))
@@ -240,12 +244,12 @@ foreach my $tag (@sortedEntries) {
   open HTML, ">$htmlOutputDir/papers/$tag.html";
   my $pr = entryHtml($tag);
   # die $tag if $pr =~ /[^\x00-\xFF]/;
-  print HTML encode($outputEncoding,$pr);
+  print HTML $writer->document($pr);
   close HTML;
 }
 
 # Close the pages of everything.
-print ALLPAPERS encode($outputEncoding,$html);
+print ALLPAPERS $writer->document($html);
 close ALLPAPERS;
 
 ## Open the all-authors page
@@ -278,20 +282,20 @@ foreach my $author (sort lastNameSorter (keys %authorPapers)) {
   }
 
   open HTML, ">$htmlOutputDir/author/".cleanUrl($author).".html";
-  print HTML encode($outputEncoding,
-                    authorHtml($author,
-                               $authorPapers{$author}, $editorPapers{$author}));
+  print HTML $writer->document(authorHtml($author, $authorPapers{$author},
+                                          $editorPapers{$author}));
   close HTML;
 }
 
 ## Close the all-authors page
-print ALLAUTHORS encode($outputEncoding,
-                        html(head(title($allAuthorsTitle)),
-                             body(pageHeader('authors'),
-                                  h1($allAuthorsTitle),
-                                  ($authorPageNoBullets
-                                   ? p(@$authorList, ".") : $authorList),
-                                  pageFooter('authors'))));
+print ALLAUTHORS
+    $writer->document(html(head(title($allAuthorsTitle),
+                                Meta(-charset => $outputEncoding)),
+                           body(pageHeader('authors'),
+                                h1($allAuthorsTitle),
+                                ($authorPageNoBullets
+                                 ? p(@$authorList, ".") : $authorList),
+                                pageFooter('authors'))));
 close ALLAUTHORS;
 
 ## Make the authors-by-alpha pages
@@ -310,20 +314,22 @@ foreach my $idx (keys %authorsByAlpha) {
   }
 
   open BYALPHA, ">$htmlOutputDir/author/alpha/$idx.html";
-  print BYALPHA encode($outputEncoding,
-                       html(head(title($allAuthorsTitle . " - " . uc($idx))),
-                            body(pageHeader(undef, "../"),
-                                 h1($allAuthorsTitle . " - " . uc($idx)),
-                                 ($authorPageNoBullets
-                                  ? p(@$alphaList, ".") : $alphaList),
-                                 pageFooter(undef, "../"))));
+  print BYALPHA
+      $writer->document(html(head(title($allAuthorsTitle . " - " . uc($idx)),
+                                  Meta(-charset => $outputEncoding)),
+                             body(pageHeader(undef, "../"),
+                                  h1($allAuthorsTitle . " - " . uc($idx)),
+                                  ($authorPageNoBullets
+                                   ? p(@$alphaList, ".") : $alphaList),
+                                  pageFooter(undef, "../"))));
   close BYALPHA;
 }
 
 ## Open the all-keywords page
 open ALLKEYWORDS, ">$htmlOutputDir/keyword/index.html";
 my $keywordList = div();
-my $keywordsPage = html(head(title($allKeywordTitle)),
+my $keywordsPage = html(head(title($allKeywordTitle),
+                             Meta(-charset => $outputEncoding)),
                         body(pageHeader('keywords'),
                              h1($allKeywordTitle), $keywordList,
                              pageFooter('keywords')));
@@ -350,13 +356,13 @@ foreach my $keyword (sort {$a cmp $b} (keys %keywordPapers)) {
   }
 
   open HTML, ">$htmlOutputDir/keyword/".cleanUrl($keyword).".html";
-  print HTML encode($outputEncoding,keywordHtml($keyword, $papers));
+  print HTML $writer->document(keywordHtml($keyword, $papers));
   close HTML;
 }
 push @kwdTopList, ".";
 
 ## Close the all-keywords page
-print ALLKEYWORDS encode($outputEncoding,$keywordsPage);
+print ALLKEYWORDS $writer->document($keywordsPage);
 close ALLKEYWORDS;
 
 print "Writing top-level page.\n" if $verbose>0;
@@ -393,7 +399,9 @@ if ($unlinked>0) {
   $topBody->appendChild($unlinkedPapers);
 }
 
-print TOP encode($outputEncoding,html(head(title($mainTitle)), $topBody));
+print TOP $writer->document(html(head(title($mainTitle),
+                                      Meta(-charset => $outputEncoding)),
+                                 $topBody));
 close TOP;
 exit 0;
 
@@ -421,7 +429,7 @@ sub authorHtml {
   }
 
   return html(
-    head(title($publishAuthor)),
+    head(title($publishAuthor), Meta(-charset => $outputEncoding)),
     body(@body, pageFooter()));
 }
 
@@ -438,7 +446,7 @@ sub keywordHtml {
   $showKeyword =~ s/^([a-z])/uc($1)/e;
 
   return html(
-    head(title($showKeyword)),
+    head(title($showKeyword), Meta(-charset => $outputEncoding)),
     body(pageHeader(), h1($showKeyword), $paperList, pageFooter()));
 }
 
@@ -834,7 +842,7 @@ sub entryHtml {
   push @ends, hr, "Source BibTeX: ", $srcfile, pageFooter();
 
   return html(
-    head(title($title)),
+    head(title($title), Meta(-charset => $outputEncoding)),
     body(@starts, @details, @ends)
   );
 }
@@ -1372,8 +1380,11 @@ B<--bibfiles> pattern.
 =item B<--input-encoding=NAME>, B<--output-encoding=NAME>
 
 Names the character set encoding which Perl should expect of the
-source BibTeX, and generate into its output HTML.  By default, both
-are B<iso-8859-1>.
+source BibTeX, and generate into its output HTML.  By default, the
+input encoding is B<iso-8859-1> because copying non-ASCII Unicode
+characters into your BibTeX source is not unusual, and the output
+encoding is B<us-ascii>, which replaces non-ASCII characters with the
+equivalent HTML entities.
 
 =back
 
@@ -1507,6 +1518,7 @@ There are a small number of Perl packages that you may need to pull
 from CPAN:
 
   HTML::HTML5::Builder
+  HTML::HTML5::Writer
   BibTeX::Parser
 
 And if you want to rebuild the GitHub README.md, then also:

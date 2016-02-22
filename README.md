@@ -100,8 +100,11 @@ Main options:
 - **--input-encoding=NAME**, **--output-encoding=NAME**
 
     Names the character set encoding which Perl should expect of the
-    source BibTeX, and generate into its output HTML.  By default, both
-    are **iso-8859-1**.
+    source BibTeX, and generate into its output HTML.  By default, the
+    input encoding is **iso-8859-1** because copying non-ASCII Unicode
+    characters into your BibTeX source is not unusual, and the output
+    encoding is **us-ascii**, which replaces non-ASCII characters with the
+    equivalent HTML entities.
 
 ## Non-standard BibTeX fields
 
@@ -213,6 +216,7 @@ from CPAN:
 
 ```
 HTML::HTML5::Builder
+HTML::HTML5::Writer
 BibTeX::Parser
 ```
 
