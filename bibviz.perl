@@ -191,6 +191,36 @@ sub entrySorter {
   return -1 unless defined $key2;
   return $key1 cmp $key2;
 }
+sub entryByDateSorter {
+  my $year1 = $lib->field($a, 'year');
+  my $haveYear1 = defined $year1 && $year1 ne '';
+  my $year2 = $lib->field($b, 'year');
+  my $haveYear2 = defined $year2 && $year2 ne '';
+
+  my $month1 = $lib->field($a, 'month');
+  my $haveMonth1 = defined $month1 && $month1 ne '';
+  my $month2 = $lib->field($b, 'month');
+  my $haveMonth2 = defined $month2 && $month2 ne '';
+
+  my $title1 = $lib->field($a, 'title');
+  my $haveTitle1 = defined $title1 && $title1 ne '';
+  my $title2 = $lib->field($b, 'title');
+  my $haveTitle2 = defined $title2 && $title2 ne '';
+
+  return 1  if $haveYear2 && !$haveYear1;
+  return -1 if $haveYear1 && !$haveYear2;
+  my $cYear = $year1 <=> $year2;
+  return $cYear if $cYear != 0;
+
+  return 1  if $haveMonth2 && !$haveMonth1;
+  return -1 if $haveMonth1 && !$haveMonth2;
+  my $cMonth = $month1 cmp $month2;
+  return $cMonth if $cMonth != 0;
+
+  return 1  if $haveTitle2 && !$haveTitle1;
+  return -1 if $haveTitle1 && !$haveTitle2;
+  return $title1 cmp $title2;
+}
 my @sortedEntries = sort entrySorter @entries;
 
 ## Augmenting records.
@@ -414,7 +444,7 @@ sub authorHtml {
 
   if ($#{$refs} > -1) {
     my $paperList = ul();
-    foreach my $ref (@$refs) {
+    foreach my $ref (sort entryByDateSorter @$refs) {
       appendElementItem($paperList, $ref);
     }
     push @body, h2($asAuthorSubhead), $paperList;
@@ -422,7 +452,7 @@ sub authorHtml {
 
   if ($#{$editorRefs} > -1) {
     my $editorList = ul();
-    foreach my $ref (@$editorRefs) {
+    foreach my $ref (sort entryByDateSorter @$editorRefs) {
       appendElementItem($editorList, $ref);
     }
     push @body, h2($asEditorSubhead), $editorList;
