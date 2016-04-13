@@ -23,8 +23,8 @@ my $originalWorkingDir = getcwd;
 
 ## Variables set by command-line options.
 my $keywordsField = 'keywords';
-my $citesCompleteField = 'cites';
-my $citesIncludeField = 'cites*';
+my $citesCompleteField = 'cites*';
+my $citesIncludeField = 'cites';
 my $abstractField = 'abstract';
 my $fileField = 'file';
 my $baseDir = $originalWorkingDir;
