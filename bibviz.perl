@@ -1438,8 +1438,8 @@ Perl regular expression used to divide the field value into keywords
 
 An entry can use these fields to note papers which it cites by giving
 their BibTeX entries' tags.  The field names by the first option
-(default B<cites>) indicates that the list of citations is complete;
-by the second option (default B<cites*>), is partial.  The third
+(default B<cites*>) indicates that the list of citations is complete;
+by the second option (default B<cites>), is partial.  The third
 option sets the Perl regular expression used to divide the field value
 into citation tags (by default, a comma possibly surrounded by
 whitespace).
