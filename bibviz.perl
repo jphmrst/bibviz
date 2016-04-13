@@ -590,7 +590,8 @@ sub entryDetailItems {
     $simpleSeparated->($note);
 
   } elsif ($bibtexType eq 'BOOK') {
-    push @body, $editorList, ' (', ($#editors>0 ? "eds." : "ed."), ')'
+    push @body, cleanString($editorList),
+         ' (', ($#editors>0 ? "eds." : "ed."), ')'
         if defined $editorList && $editorList ne '';
 
     $setSeparator->(br);
@@ -620,7 +621,7 @@ sub entryDetailItems {
 
   } elsif ($bibtexType eq 'INBOOK') {
     push @body, br, 'In ';
-    push @body, $editorList, ' (ed', ($#editors>0 ? 's' : ''), '.), '
+    push @body, cleanString($editorList), ' (ed', ($#editors>0 ? 's' : ''), '.), '
         if defined $editorList && $editorList ne '';
     push @body, $type, " " if defined $type && $type ne '';
     push @body, ((defined $booktitle && $booktitle ne '')
@@ -648,7 +649,7 @@ sub entryDetailItems {
 
   } elsif ($bibtexType eq 'INCOLLECTION') {
     push @body, br, 'In ';
-    push @body, $editorList, ' (ed', ($#editors>0 ? 's' : ''), '.), '
+    push @body, cleanString($editorList), ' (ed', ($#editors>0 ? 's' : ''), '.), '
         if defined $editorList && $editorList ne '';
     push @body, ((defined $booktitle && $booktitle ne '')
                  ? i($booktitle) : 'collection title not given ');
@@ -675,7 +676,7 @@ sub entryDetailItems {
 
   } elsif ($bibtexType eq 'INPROCEEDINGS' || $bibtexType eq 'CONFERENCE') {
     push @body, br, 'In ';
-    push @body, $editorList, ' (ed', ($#editors>0 ? 's' : ''), '.), '
+    push @body, cleanString($editorList), ' (ed', ($#editors>0 ? 's' : ''), '.), '
         if defined $editorList && $editorList ne '';
     push @body, ((defined $booktitle && $booktitle ne '')
                  ? i($booktitle) : 'proceedings title not given ');
@@ -738,7 +739,7 @@ sub entryDetailItems {
     $simpleSeparated->($note);
 
   } elsif ($bibtexType eq 'PROCEEDINGS') {
-    push @body, $editorList, ' (ed', ($#editors>0 ? 's' : ''), '.), '
+    push @body, cleanString($editorList), ' (ed', ($#editors>0 ? 's' : ''), '.), '
         if defined $editorList && $editorList ne '';
 
     $setSeparator->(br);
@@ -1065,6 +1066,7 @@ sub cleanString {
   $s =~ s/\\` *e/è/g;
   $s =~ s/\\` *i/ì/g;
   $s =~ s/\\` *\\i\b/ì/g;
+  $s =~ s/\\` *{ *\\i *}/ì/g;
   $s =~ s/\\` *o/ò/g;
   $s =~ s/\\` *u/ù/g;
   $s =~ s/\\` *A/À/g;
@@ -1077,6 +1079,7 @@ sub cleanString {
   $s =~ s/\\' *e/é/g;
   $s =~ s/\\' *i/í/g;
   $s =~ s/\\' *\\i\b/í/g;
+  $s =~ s/\\' *{ *\\i *}/í/g;
   $s =~ s/\\' *o/ó/g;
   $s =~ s/\\' *u/ú/g;
   $s =~ s/\\' *y/ý/g;
@@ -1091,6 +1094,7 @@ sub cleanString {
   $s =~ s/\\" *e/ë/g;
   $s =~ s/\\" *i/ï/g;
   $s =~ s/\\" *\\i\b/ï/g;
+  $s =~ s/\\" *{ *\\i\b *}/ï/g;
   $s =~ s/\\" *o/ö/g;
   $s =~ s/\\" *u/ü/g;
   $s =~ s/\\" *y/ÿ/g;
@@ -1105,6 +1109,7 @@ sub cleanString {
   $s =~ s/\\^ *e/ê/g;
   $s =~ s/\\^ *i/î/g;
   $s =~ s/\\^ *\\i\b/î/g;
+  $s =~ s/\\^ *{ *\\i\b *}/î/g;
   $s =~ s/\\^ *o/ô/g;
   $s =~ s/\\^ *u/û/g;
   $s =~ s/\\^ *A/Â/g;
@@ -1117,6 +1122,7 @@ sub cleanString {
   $s =~ s/\\= *e/ē/g;
   $s =~ s/\\= *i/ī/g;
   $s =~ s/\\= *\\i\b/ī/g;
+  $s =~ s/\\= *{ *\\i\b *}/ī/g;
   $s =~ s/\\= *o/ō/g;
   $s =~ s/\\= *u/ū/g;
   $s =~ s/\\= *\\ae\b/ǣ/g;
@@ -1139,6 +1145,7 @@ sub cleanString {
   $s =~ s/\\v +a/ǎ/g;
   $s =~ s/\\v +i/ǐ/g;
   $s =~ s/\\v *\\i\b/ǐ/g;
+  $s =~ s/\\v *{ *\\i\b *}/ǐ/g;
   $s =~ s/\\v +o/ǒ/g;
   $s =~ s/\\v +u/ǔ/g;
   $s =~ s/\\v +g/ǧ/g;
@@ -1221,6 +1228,7 @@ sub cleanString {
   $s =~ s/\\u +g/ğ/g;
   $s =~ s/\\u +i/ĭ/g;
   $s =~ s/\\u *\\i\b/ĭ/g;
+  $s =~ s/\\u *{ *\\i\b *}/ĭ/g;
   $s =~ s/\\u +o/ŏ/g;
   $s =~ s/\\u +u/ŭ/g;
   $s =~ s/\\u +A/Ă/g;
