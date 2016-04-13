@@ -124,14 +124,11 @@ options in this section.
 
     An entry can use these fields to note papers which it cites by giving
     their BibTeX entries' tags.  The field names by the first option
-    (default **cites**) indicates that the list of citations is complete;
-    by the second option (default **cites\***), is partial.  The third
+    (default **cites\***) indicates that the list of citations is complete;
+    by the second option (default **cites**), is partial.  The third
     option sets the Perl regular expression used to divide the field value
     into citation tags (by default, a comma possibly surrounded by
     whitespace).
-
-    This functionality is not implemented in the current version of
-    BibViz.
 
 - **--abstract-field=NAME**
 

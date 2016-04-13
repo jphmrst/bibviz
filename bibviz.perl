@@ -867,6 +867,30 @@ sub entryHtml {
     }
   }
 
+  # Citations
+  my $cites = $lib->field($tag, $citesIncludeField);
+  my $fullCites = $lib->field($tag, $citesCompleteField);
+  my @citesList;
+  my $citesTitle = undef;
+
+  if (defined $fullCites && $fullCites ne '') {
+    @citesList = split /$citationsSep/, $fullCites;
+    $citesTitle = "Full citations list: ";
+  } elsif (defined $cites && $cites ne '') {
+    @citesList = split /$citationsSep/, $cites;
+    $citesTitle = "Citations include: ";
+  }
+
+  if (defined $citesTitle) {
+    my $citesUl = ul();
+    my $citesPar = p($citesTitle, $citesUl);
+    push @ends, $citesPar;
+    my $sep = $citesTitle;
+    foreach my $c (sort entrySorter @citesList) {
+      appendElementItem($citesUl,$c);
+    }
+  }
+
   # Endmatter
   my $srcfile = $lib->field($tag, '_file');
   push @ends, hr, "Source BibTeX: ", $srcfile, pageFooter();
@@ -875,6 +899,15 @@ sub entryHtml {
     head(title($title), Meta(-charset => $outputEncoding)),
     body(@starts, @details, @ends)
   );
+}
+
+sub entryLink {
+  my $tag = shift;
+  my $pathToTop = shift;
+  my $prefix = "./";
+  $prefix = $pathToTop . "papers/" if defined $pathToTop;
+  return a(-href=>$prefix.$tag.".html",
+           $tag);
 }
 
 sub appendElementItem {
@@ -1443,9 +1476,6 @@ by the second option (default B<cites>), is partial.  The third
 option sets the Perl regular expression used to divide the field value
 into citation tags (by default, a comma possibly surrounded by
 whitespace).
-
-This functionality is not implemented in the current version of
-BibViz.
 
 =item B<--abstract-field=NAME>
 
