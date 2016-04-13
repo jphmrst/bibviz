@@ -1054,6 +1054,7 @@ sub cleanLaTeX {
   my $s = shift;
   $s =~ s/(\\[^a-zA-Z0-9]){([a-zA-Z])}/$1$2/g;
   $s =~ s/{(\\[^a-zA-Z0-9][a-zA-Z])}/$1/g;
+  $s =~ s/([^\\])\\ +/$1 /g;
   return $s;
 }
 
