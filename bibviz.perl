@@ -948,20 +948,19 @@ sub entryHtml {
 
   my $citedBy = $lib->field($tag, 'citedBy');
   if (defined $citedBy && ref($citedBy) eq 'ARRAY' && $#{$citedBy} > -1) {
-    print "$tag cited by ", join(', ', @$citedBy), "\n";
     my $citedByUl = ul();
     my $citedByPar = p('Cited by:', $citedByUl);
     push @ends, $citedByPar;
     my $sep = 'Cited by:';
     foreach my $c (sort entrySorter @$citedBy) {
-      print " - $tag cited by $c\n";
       appendElementItem($citedByUl,$c);
     }
   }
 
   # Endmatter
   my $srcfile = $lib->field($tag, '_file');
-  push @ends, hr, "Source BibTeX: ", $srcfile, pageFooter();
+  push @ends,
+  hr, "Source BibTeX: ", $srcfile, br, "BibTeX tag: ", $tag, pageFooter();
 
   return html(
     head(title($title), Meta(-charset => $outputEncoding)),
