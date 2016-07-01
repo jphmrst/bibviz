@@ -201,8 +201,7 @@ citations and local file links provided in the BibTeX source.
 
 A to-do list:
 
-- The citations displayd/links are not displayed.
-- Not all standard BibTeX fields are currently displayed.
+- The cited-by lists/links are not displayed.
 
 This is a pre-version-number version of BibViz.
 

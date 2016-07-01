@@ -57,6 +57,7 @@ my $asAuthorSubhead = 'As author';
 my $asEditorSubhead = 'As editor';
 my $inputEncoding = 'iso-8859-1';
 my $outputEncoding = 'us-ascii';
+my $keywordSorterSpec = 'date:booktitle:author';
 my $verbose = 1;
 
 ## Process command-line options
@@ -222,6 +223,44 @@ sub entryByDateSorter {
   return $title1 cmp $title2;
 }
 my @sortedEntries = sort entrySorter @entries;
+
+my %singleSorter = (
+  'date' => sub {
+    my $year1 = $lib->field($a, 'year');
+    my $haveYear1 = defined $year1 && $year1 ne '';
+    my $year2 = $lib->field($b, 'year');
+    my $haveYear2 = defined $year2 && $year2 ne '';
+
+    my $month1 = $lib->field($a, 'month');
+    my $haveMonth1 = defined $month1 && $month1 ne '';
+    my $month2 = $lib->field($b, 'month');
+    my $haveMonth2 = defined $month2 && $month2 ne '';
+
+    return 1  if $haveYear2 && !$haveYear1;
+    return -1 if $haveYear1 && !$haveYear2;
+    my $cYear = $year1 <=> $year2;
+    return $cYear if $cYear != 0;
+
+    return 1  if $haveMonth2 && !$haveMonth1;
+    return -1 if $haveMonth1 && !$haveMonth2;
+    my $cMonth = $month1 cmp $month2;
+    return $cMonth if $cMonth != 0;
+
+    return 0;
+  },
+    );
+
+sub sortSpecToEntrySorter {
+  my $specString = shift;
+  my @specs = split /\s*:\s*/, $specString;
+  return sub {
+    foreach my $spec (@specs) {
+      my $res = &{$singleSorter{$spec}};
+      return $res if $res != 0;
+    }
+    return 0;
+  }
+}
 
 ## Augmenting records.
 print "Cross-referencing.\n" if $verbose>0;
@@ -531,19 +570,19 @@ sub entryDetailItems {
   my @editors = split / and /, $editorList;
   $editorList =~ s/ and /, /g;
 
-  my $title=$lib->field($tag, 'title');
-  my $booktitle=$lib->field($tag, 'booktitle');
-  my $journal=$lib->field($tag, 'journal');
+  my $title=cleanLaTeX($lib->field($tag, 'title'));
+  my $booktitle=cleanLaTeX($lib->field($tag, 'booktitle'));
+  my $journal=cleanLaTeX($lib->field($tag, 'journal'));
   my $crossref=$lib->field($tag, 'crossref');
   my $volume=$lib->field($tag, 'volume');
   my $number=$lib->field($tag, 'number');
   my $year = $lib->field($tag, 'year');
-  my $institution = $lib->field($tag, 'institution');
+  my $institution = cleanLaTeX($lib->field($tag, 'institution'));
   my $pages = $lib->field($tag, 'pages');
   $pages =~ s/--+/-/g if defined $pages;
   my $month = $lib->field($tag, 'month');
   my $note = $lib->field($tag, 'note');
-  my $publisher = $lib->field($tag, 'publisher');
+  my $publisher = cleanLaTeX($lib->field($tag, 'publisher'));
   my $address = $lib->field($tag, 'address');
   my $edition = $lib->field($tag, 'edition');
   my $howpublished = $lib->field($tag, 'howpublished');
@@ -584,7 +623,7 @@ sub entryDetailItems {
 
     $setSeparator->(', ') if $commenced;
     $separatedDate->();
-    $separated->($pages, ['p.', $pages]);
+    $separated->($pages, ['p. ', $pages]);
 
     $setSeparator->(br);
     $simpleSeparated->($note);
@@ -629,7 +668,7 @@ sub entryDetailItems {
 
     $setSeparator->(', ');
     $separated->($chapter, ["Chapter ", $chapter]);
-    $separated->($pages, ["p.", $pages]);
+    $separated->($pages, ["p. ", $pages]);
     $simpleSeparated->($type);
 
     $setSeparator->(br);
@@ -656,7 +695,7 @@ sub entryDetailItems {
 
     $setSeparator->(', ');
     $separated->($chapter, ["Chapter ", $chapter]);
-    $separated->($pages, ["p.", $pages]);
+    $separated->($pages, ["p. ", $pages]);
     $simpleSeparated->($type);
 
     $setSeparator->(br);
@@ -683,7 +722,7 @@ sub entryDetailItems {
 
     $setSeparator->(', ');
     $separated->($chapter, ["Chapter ", $chapter]);
-    $separated->($pages, ["p.", $pages]);
+    $separated->($pages, ["p. ", $pages]);
     $simpleSeparated->($type);
 
     $setSeparator->(br);
@@ -775,7 +814,7 @@ sub entryDetailItems {
     $simpleSeparated->($note);
 
   } else {
-    push @body, br, "Unknown BibTeX type, $bibtexType";
+    push @body, br, "Unknown BibTeX type $bibtexType";
     $setSeparator->(br);
     $separated->($editorList, ["Editors: ", $editorList]);
     $separated->($booktitle, ["Book title: ", $booktitle]);
@@ -1571,11 +1610,7 @@ A to-do list:
 
 =item
 
-The citations displayd/links are not displayed.
-
-=item
-
-Not all standard BibTeX fields are currently displayed.
+The cited-by lists/links are not displayed.
 
 =back
 
