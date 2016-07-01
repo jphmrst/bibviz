@@ -290,10 +290,6 @@ foreach my $tag (@sortedEntries) {
     push @{$editorPapers{$editor}}, $tag;
   }
 
-  ## Turn (some) LaTeX into HTML
-  foreach my $field (qw(title booktitle)) {
-  }
-
   ## If we have citations, build up the cited-by lists.
   my @cites = ();
   my $allCites = $lib->field($tag, $citesCompleteField);
