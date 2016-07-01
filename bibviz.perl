@@ -293,6 +293,21 @@ foreach my $tag (@sortedEntries) {
   ## Turn (some) LaTeX into HTML
   foreach my $field (qw(title booktitle)) {
   }
+
+  ## If we have citations, build up the cited-by lists.
+  my @cites = ();
+  my $allCites = $lib->field($tag, $citesCompleteField);
+  my $someCites = $lib->field($tag, $citesIncludeField);
+  if (defined $allCites && $allCites ne '') {
+    @cites = split /\s*,\s*/, $allCites;
+  } elsif (defined $someCites && $someCites ne '') {
+    @cites = split /\s*,\s*/, $someCites;
+  }
+  if ($#cites > -1) {
+    foreach my $cited (@cites) {
+      $lib->pushCitedBy($cited, $tag);
+    }
+  }
 }
 
 ## Open a page of everything
@@ -931,6 +946,19 @@ sub entryHtml {
     }
   }
 
+  my $citedBy = $lib->field($tag, 'citedBy');
+  if (defined $citedBy && ref($citedBy) eq 'ARRAY' && $#{$citedBy} > -1) {
+    print "$tag cited by ", join(', ', @$citedBy), "\n";
+    my $citedByUl = ul();
+    my $citedByPar = p('Cited by:', $citedByUl);
+    push @ends, $citedByPar;
+    my $sep = 'Cited by:';
+    foreach my $c (sort entrySorter @$citedBy) {
+      print " - $tag cited by $c\n";
+      appendElementItem($citedByUl,$c);
+    }
+  }
+
   # Endmatter
   my $srcfile = $lib->field($tag, '_file');
   push @ends, hr, "Source BibTeX: ", $srcfile, pageFooter();
@@ -976,7 +1004,7 @@ sub appendElementItem {
   my $editorList=$lib->field($tag, 'editor');
   my @editors = split / and /, $editorList;
   $editorList =~ s/ and /, /g;
-  my $title   = $lib->field($tag, 'title');
+  my $title = cleanLaTeX($lib->field($tag, 'title'));
   my $editorSep = undef;
   foreach my $editor (@editors) {
     push @downEditorLinks, ', ' if $editorSep;
@@ -1016,8 +1044,8 @@ sub appendElementItem {
     $fin = $title =~ /\.$/ ? '' : '."';
   }
 
-  my $journal=$lib->field($tag, 'journal');
-  my $booktitle=$lib->field($tag, 'booktitle');
+  my $journal=cleanLaTeX($lib->field($tag, 'journal'));
+  my $booktitle=cleanLaTeX($lib->field($tag, 'booktitle'));
   my $crossref=$lib->field($tag, 'crossref');
   my $volume=$lib->field($tag, 'volume');
   my $number=$lib->field($tag, 'number');
@@ -1603,16 +1631,6 @@ files and PDFs and files associated with BibTeX entries.  Citations
 can be listed by author or by keyword, and individual citations' pages
 include the usual BibTeX fields' information as well as any abstract,
 citations and local file links provided in the BibTeX source.
-
-A to-do list:
-
-=over
-
-=item
-
-The cited-by lists/links are not displayed.
-
-=back
 
 This is a pre-version-number version of BibViz.
 

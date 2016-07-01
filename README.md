@@ -199,10 +199,6 @@ can be listed by author or by keyword, and individual citations' pages
 include the usual BibTeX fields' information as well as any abstract,
 citations and local file links provided in the BibTeX source.
 
-A to-do list:
-
-- The cited-by lists/links are not displayed.
-
 This is a pre-version-number version of BibViz.
 
 ## Requirements

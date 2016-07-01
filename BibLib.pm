@@ -77,6 +77,11 @@ sub field {
   }
 }
 
+sub pushCitedBy {
+  my ($self, $tag, $citer) = @_;
+  push @{$self->{entries}{$tag}{citedBy}}, $citer;
+}
+
 sub authors {
   my ($self, $tag) = @_;
   if (exists $self->{entries}{$tag}) {
