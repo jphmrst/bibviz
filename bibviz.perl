@@ -210,7 +210,9 @@ sub entryByDateSorter {
 
   return 1  if $haveYear2 && !$haveYear1;
   return -1 if $haveYear1 && !$haveYear2;
-  my $cYear = $year1 <=> $year2;
+  my $cYear1 =  "$year1"; $cYear1 =~ s/[^0-9.]//g; $cYear1=0 if $cYear1 eq '';
+  my $cYear2 =  "$year2"; $cYear2 =~ s/[^0-9.]//g; $cYear2=0 if $cYear2 eq '';
+  my $cYear = $cYear1 <=> $cYear2;
   return $cYear if $cYear != 0;
 
   return 1  if $haveMonth2 && !$haveMonth1;
