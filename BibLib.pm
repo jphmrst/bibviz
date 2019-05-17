@@ -19,7 +19,7 @@ our $verbose=0;
 sub new {
   my $class = shift;
   my $this = bless {
-    strings => {
+    strings => {  ## Hack around how BibTeX::Parser likes one file only
       jan => "January",
       feb => "February",
       mar => "March",
